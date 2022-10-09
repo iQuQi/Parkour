@@ -9,14 +9,17 @@ import numpy as np
 HOME_FILE_PATH = os.path.abspath('homefile.blend')
 MIN_NR_FRAMES = 64
 RESOLUTION = (512, 512)
+X = 0
+Y = 1
+Z = 2
 
 #Crucial joints sufficient for visualisation #FIX ME - Add more joints if desirable for MixamRig
 BASE_JOINT_NAMES = ['Head', 'Neck',
-                    'RightArm', 'RightForeArm', 'RightHand', 
-                    'LeftArm', 'LeftForeArm', 'LeftHand',
+                    'RightArm', 'RightHand', 
+                    'LeftArm', 'LeftHand',
                     'Hips', 
-                    'RightUpLeg', 'RightLeg', 'RightFoot', 
-                    'LeftUpLeg', 'LeftLeg', 'LeftFoot',
+                    'RightUpLeg',  'RightFoot', 
+                    'LeftUpLeg',  'LeftFoot',
                     ]
 
 
@@ -75,31 +78,47 @@ def fbx2jointDict():
         #End Frame Index for .fbx file
         frame_end = bpy.data.actions[0].frame_range[1]
         
+        prev_location = {}
+        prev_rotation = {}
         for i in range(int(frame_end)+1):
-            
+    
             bpy.context.scene.frame_set(i)
             bone_struct = bpy.data.objects['Armature'].pose.bones
             out_dict = {'pose_keypoints_3d': []}
         
-
+            
             # TEST 1
-            #print('TEST 1 ====================== JSON FILE, Frame - ', i+1)
+            print('TEST 1 ====================== JSON FILE, Frame - ', i+1)
             for name in joint_names:
                 local_location = bone_struct[name].matrix_basis @ Vector((0, 0, 0))
                 local_rotation = bone_struct[name].rotation_quaternion
 
                 
+                
+                location = [local_location[X], local_location[Y], local_location[Z]]
+                rotation = [local_rotation.w,local_rotation.x,local_rotation.y,local_rotation.z]
+                if(i==0):
+                    velocity=[0,0,0]
+                    angular_velocity=[0,0,0,0]
+                else:
+                    velocity = [(prev_location[name][X]-local_location[X])*30,(prev_location[name][Y]-local_location[Y])*30, (prev_location[name][Z]-local_location[Z])*30]    
+                    angular_velocity = [(prev_rotation[name].w-local_rotation.w)*30,(prev_rotation[name].x-local_rotation.x)*30,(prev_rotation[name].y-local_rotation.y)*30, (prev_rotation[name].z-local_rotation.z)*30]    
+                    
                 # print('frame:',i,':', anim_name ,name)
-                # print(local_location[0],local_location[1],local_location[2])
+                # print(local_location[X],local_location[Y],local_location[Z])
                 # print(local_rotation.w,local_rotation.x,local_rotation.y,local_rotation.z)
-
-                l = [local_location[0], local_location[1], local_location[2]]
-                r = [local_rotation.w, local_rotation.x, local_rotation.y, local_rotation.z]
-                out_dict['pose_keypoints_3d'].extend(l + r)
+                # print('velocity: ',velocity)
+                # print('angular_velocity: ',angular_velocity)
+                
+                prev_location[name] = location
+                prev_rotation[name] = local_rotation.copy()
+                
+                out_dict['pose_keypoints_3d'].extend(location + rotation + velocity + angular_velocity)
             
             save_path = os.path.join(save_dir,'%04d_keypoints.json'%i)
             with open(save_path,'w') as f:
                 json.dump(out_dict, f)
+
 
 def jointDict2npy():
     
@@ -121,8 +140,8 @@ def jointDict2npy():
             
             with open(file_path) as f:
                 info = json.load(f)
-                joint = np.array(info['pose_keypoints_3d']).reshape((-1,7))
-            motion.append(joint[:15,:])
+                joint = np.array(info['pose_keypoints_3d']).reshape((-1,14))
+            motion.append(joint[:11,:])
 
             
         motion = np.stack(motion,axis=0)
@@ -142,10 +161,10 @@ if __name__ == '__main__':
     jointDict2npy()       
 
     #TEST 2 => 아니왜 hips 결과가 다르지
-    # print('TEST 2 ====================== NPY file')
-    # frames=np.load('./json2npy/Aim Pistol/Aim Pistol.npy') 
+    print('TEST 2 ====================== NPY file')
+    frames=np.load('./json2npy/Aim Pistol/Aim Pistol.npy') 
 
-    # for i in range(len(frames)):
-    #     print(i,": ",frames[i])    
+    for i in range(len(frames)):
+        print(i,": ",frames[i])    
 
 

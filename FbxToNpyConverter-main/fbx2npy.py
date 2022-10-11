@@ -16,11 +16,18 @@ Z = 2
 class Trajectory:
     def __init__(self, location, rotation, speed, direction, desired_direction):
         self.location = location
-        self.lotation = rotation
+        self.rotation = rotation
         self.speed = speed
         self.direction = direction
         self.desired_direction = desired_direction
 
+class Joint:
+    def __init__(self, name, location, rotation, angular_velocity):
+        self.name = name
+        self.location = location
+        self.rotation = rotation
+        self.angular_velocity = angular_velocity
+     
 
 #Crucial joints sufficient for visualisation #FIX ME - Add more joints if desirable for MixamRig
 BASE_JOINT_NAMES = ['Head', 'Neck',
@@ -97,9 +104,9 @@ def fbx2jointDict():
             bpy.context.scene.frame_set(i)
             bone_struct = bpy.data.objects['Armature'].pose.bones
 
-            out_dict = {'pose_keypoints_3d': [], 'trajectory':[]}       
+            out_dict = {'joints': [], 'trajectory':[]}       
                      
-            # print(trajectory.location, trajectory.lotation, trajectory.speed, trajectory.direction, trajectory.desired_direction)
+            # print(trajectory.location, trajectory.rotation, trajectory.speed, trajectory.direction, trajectory.desired_direction)
             
             # TEST 1
             # print('TEST 1 ====================== JSON FILE, Frame - ', i+1)
@@ -110,7 +117,7 @@ def fbx2jointDict():
             traj_direction = []
             traj_desired_direction = [0,0,0]
 
-            for name in joint_names:
+            for idx, name in enumerate(joint_names):
                 local_location = bone_struct[name].matrix_basis @ Vector((0, 0, 0))
                 local_rotation = bone_struct[name].rotation_quaternion
 
@@ -137,17 +144,18 @@ def fbx2jointDict():
                     trajectory = Trajectory(traj_location, traj_rotation, traj_speed, traj_direction, traj_desired_direction)
                     out_dict['trajectory'].append(trajectory.__dict__)
                         
-                # print('frame:',i,':', anim_name ,name)
-                # print(local_location[X],local_location[Y],local_location[Z])
-                # print(local_rotation.w,local_rotation.x,local_rotation.y,local_rotation.z)
-                # print('velocity: ',velocity)
-                # print('angular_velocity: ',angular_velocity)
+                
+                if(i!=0):
+                    if(out_dict_list[i-1]['joints'][idx]['name']==name):
+                        out_dict_list[i-1]['joints'][idx]['angular_velocity'] = angular_velocity
+                joint = Joint(name, location, rotation, angular_velocity)
+                # out_dict['joints'].extend(angular_velocity + location + rotation)
+                out_dict['joints'].append(joint.__dict__)
                 
                 prev_location[name] = location
                 prev_rotation[name] = local_rotation.copy()
                 
                 
-                out_dict['pose_keypoints_3d'].extend(angular_velocity + location + rotation + velocity)
             
             
             out_dict_list.append(out_dict)
@@ -178,13 +186,13 @@ def jointDict2npy():
             
             with open(file_path) as f:
                 info = json.load(f)
-                # joint = np.array(info['pose_keypoints_3d'])
-                joint = np.array(info['pose_keypoints_3d']).reshape((-1,14))
+                joint = np.array(info['joints'])
+                # joint = np.array(info['joints']).reshape((-1,11))
                 trajectory_2_npy = info['trajectory']
             
             arr = []
             arr.append(trajectory_2_npy)
-            arr.append(joint[:11,:])
+            arr.append(joint)
             motion.append(arr)
         
         
@@ -192,8 +200,6 @@ def jointDict2npy():
         save_path = os.path.join(npy_dir,anim_name)
         if not os.path.exists(save_path):
             os.makedirs(save_path)
-            
-        # print(save_path)
         
         np.save(save_path+'/'+'{i}.npy'.format(i=anim_name), motion)
         
@@ -208,7 +214,7 @@ if __name__ == '__main__':
     jointDict2npy()       
 
     #TEST 2 => 아니왜 hips 결과가 다르지
-    # print('TEST 2 ====================== NPY file')
+    print('TEST 2 ====================== NPY file')
     frames=np.load('./json2npy/Aim Pistol/Aim Pistol.npy', allow_pickle=True) 
 
     for i in range(len(frames)):

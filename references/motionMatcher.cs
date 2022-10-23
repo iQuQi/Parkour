@@ -6,29 +6,36 @@ using System.Threading;
 
 public class MotionMatcher : MonoBehaviour
 {
-    public Text costText;
-    public MotionsData motionsData;
-    public MotionMatcherSettings motionMatcherSettings;
-    public MotionCostFactorSettings motionCostFactorSettings;
+    // 초기화 안함..?
+    public MotionsData motionsData;  // 깃헙에 정의된 클래스: public MotionData[] motionDataList;
+    public MotionMatcherSettings motionMatcherSettings; // 깃헙에 정의된 클래스
+    public MotionCostFactorSettings motionCostFactorSettings; // 깃헙에 정의된 클래스
 
-    public MotionFrameData currentMotionFrameData;
-    private Transform motionOwner;
+    // 왜 필요?
+    private PlayerInput playerInput; // 깃헙에 정의된 클래스
 
+    // 초기화 
     public int bestMotionFrameIndex = -1;
     public string bestMotionName = "HumanoidIdle";
-    public MotionDebugData bestMotionDebugData = null;
-
-    private bool bComputeMotionSnapShot = false;
-    private float currentComputeTime;
-
-    private string textContent = "";
-
-    private PlayerInput playerInput;
     private bool bCrouch = false;
     private float lastVelocity = 0f;
-    public List<MotionDebugData> motionDebugDataList;
 
-    private Thread motionThread;
+    // Start에서 초기화
+    public MotionFrameData currentMotionFrameData; // 깃헙에 정의된 클래스
+    private Transform motionOwner;
+    private float currentComputeTime;
+
+    // 디버깅 관련
+    private string textContent = ""; 
+    public Text costText;
+    public MotionDebugData bestMotionDebugData = null; // 깃헙에 정의된 클래스
+    public List<MotionDebugData> motionDebugDataList; 
+
+
+    // 사용되는 곳 없음
+    private Thread motionThread; 
+    private bool bComputeMotionSnapShot = false;
+
 
     void Start()
     {
@@ -37,11 +44,12 @@ public class MotionMatcher : MonoBehaviour
         currentComputeTime = motionMatcherSettings.ComputeMotionsBestCostGap;
         motionDebugDataList = new List<MotionDebugData>();
 
-        //HumanoidCrouchIdle 动画有问题，只能通过这种方式临时处理一下
+        // HumanoidCrouchIdle. 애니메이션에 문제가 있어 임시로 처리할 수밖에 없음
+        // 모션 리스트에서 모션 꺼내기 => 모션에서 프레임 리스트 꺼내기 => 리스트에서 프레임 꺼내기 => 프레임에서 궤적정보 리스트 꺼내기 => 리스트에서 궤적 정보 꺼내기
         for (int i = 0; i < motionsData.motionDataList.Length; i++)
         {
             MotionData motionData = motionsData.motionDataList[i];
-            if (motionData.motionName.Contains("HumanoidCrouchIdle"))
+            if (motionData.motionName.Contains("HumanoidCrouchIdle")) // 임시 코드 인가봄
             {
                 for (int j = 0; j < motionData.motionFrameDataList.Length; j++)
                 {
@@ -49,6 +57,8 @@ public class MotionMatcher : MonoBehaviour
                     for (int k = 0; k < motionFrameData.motionTrajectoryDataList.Length; k++)
                     {
                         MotionTrajectoryData motionTrajectoryData = motionFrameData.motionTrajectoryDataList[k];
+
+                        // 꺼내온 궤적데이터의 로컬 포지션 값을 (0,0,0) 으로 초기화
                         motionTrajectoryData.localPosition = Vector3.zero;
                     }
                 }
@@ -56,42 +66,63 @@ public class MotionMatcher : MonoBehaviour
         }
     }
 
+    // 현재 시간 계산 함수
     private void Update()
     {
         currentComputeTime += Time.deltaTime;
     }
 
+    // 상위 클래스에서 호출하는 메인 함수
     public string AcquireMatchedMotion(PlayerInput playerInput, string motionName, float normalizedTime)
     {
         //playerInput.crouch = true;
         //playerInput.direction = Vector3.forward;
         //playerInput.velocity = 0.65f;
 
+
+        // 플레이어 입력정보 꺼내기
         float velocity = playerInput.velocity;
         Vector3 direction = playerInput.direction;
         float acceleration = playerInput.acceleration;
         float brake = playerInput.brake;
         bool crouch = playerInput.crouch;
 
+
+        //
         if (currentComputeTime >= motionMatcherSettings.ComputeMotionsBestCostGap)
         {
+            // 현재 시간 초기화
             currentComputeTime = 0;
-            
+    
+            // 디버깅 관련 코드 - 0
             motionDebugDataList.Clear();
 
+            // MotionMainEntryType: 깃헙에 정의된 Enum 타입 ( none,stand,crouch,prone,)
             MotionMainEntryType motionMainEntryType = MotionMainEntryType.none;
+
+            // 웅크리기 변수 업데이트
             if (bCrouch != crouch)
             {
                 bCrouch = crouch;
                 motionMainEntryType = crouch ? MotionMainEntryType.crouch : MotionMainEntryType.stand;
             }
+            
+            // 속도 변수값 저장해두기
             lastVelocity = velocity;
+
+
             CapturePlayingMotionSnapShot(playerInput, motionName, normalizedTime, motionMainEntryType);
+
+            // 디버깅 코드 - 1
             if (motionMatcherSettings.EnableDebugText)
             {
                 AddDebugContent("Cost", true);
             }
+
+            // 비용 계산 함수 호출
             ComputeMotionsBestCost();
+
+            // 디버깅 코드 - 2
             costText.text = textContent;
             //Debug.LogFormat("AcquireMatchedMotion velocity {0} MotionName {1} direction {2}", velocity, MotionName, direction);
         }
@@ -99,6 +130,9 @@ public class MotionMatcher : MonoBehaviour
         return bestMotionName;
     }
 
+
+    // 호출하는 곳 없음
+    // Baking: 모든 프레임에 키 프레임을 추가하는 과정으로, 제약 조건, 공간 전환 또는 시뮬레이션을 키 프레임으로 변환하는 것과 같은 다른 목적으로도 사용할 수 있음
     private float AcquireBakedMotionVelocity(string motionName, float normalizedTime, MotionMainEntryType motionMainEntryType)
     {
         MotionFrameData motionFrameData = AcquireBakedMotionFrameData(motionName, normalizedTime, motionMainEntryType);
@@ -278,6 +312,8 @@ public class MotionMatcher : MonoBehaviour
         }
     }
 
+
+    // 디버깅 코드 함수
     private void AddDebugContent(string content, bool bClear = false)
     {
         if (bClear)

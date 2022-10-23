@@ -1,25 +1,26 @@
-# import sys
-# print(sys.path)
-from PlayerController import PlayerController
-import keyboard
+import sys
+sys.path.append('/Users/yujin/Documents/GitHub/parkour')
+sys.path.append('/Users/yujin/Documents/GitHub/parkour/scripts')
+sys.path.append('/Users/yujin/Library/Python/3.9/lib/python/site-packages/keyboard')
 
-VECTOR3 = (0,0,0)
-KEY_CODE = {'Z': 6,'X': 7, 'C': 8,'V': 9, 'SPACE': 49, 'UP': 123, 'DOWN': 124, 'RIGHT' : 125, 'LEFT': 126}
+from utils.types.constants import *
+from PlayerController import *
+
+import keyboard
 
 class PlayerInputController:
     def __init__(self):
         self.inputText = ''
-        self.mCamForward = VECTOR3        
-        self.mMove = VECTOR3
-        self.mJump = False 
+        self.mainCameraForward = VECTOR3        
+        self.mainMove = VECTOR3
+        self.mainJump = False 
 
-        self.mCharacter = PlayerController()
+        #self.mainCharacter = PlayerController()
         # m_Cam                  
             
 
     def start():
         print('start')
-
 
     def update():
         print('update')
@@ -28,19 +29,14 @@ class PlayerInputController:
         print('fixed update')
 
 
-
 def keyboardTest():
     for key in KEY_CODE.keys():
-        print(key, KEY_CODE[key])
-        print('%s was pressed!' % key)
-        keyboard.add_hotkey(KEY_CODE[key], lambda: print(' %s was pressed!' % key))
+        keyboard.add_hotkey(KEY_CODE[key], print, args=[' %s was pressed!' % key])
     keyboard.wait()
-
 
 
 if __name__ == '__main__':
         controller = PlayerInputController()
-        print('test', controller.mCharacter.player)
         keyboardTest()
 
         

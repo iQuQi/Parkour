@@ -4,7 +4,9 @@ import bpy
 class ModalOperator(bpy.types.Operator):
     bl_idname = "object.modal_operator"
     bl_label = "Simple Modal Operator"
-
+    
+    weight = 0
+    
     def __init__(self):
         print("Start")
 
@@ -17,29 +19,34 @@ class ModalOperator(bpy.types.Operator):
     
     def move(self, context, type):
         if type=='UP_ARROW':
-            context.object.location.y -= 1
+            context.object.location.y -= 1 * self.weight
         elif type=='DOWN_ARROW':
-            context.object.location.y += 1
+            context.object.location.y += 1 * self.weight
         elif type=='LEFT_ARROW':
-            context.object.location.x += 1
+            context.object.location.x += 1 * self.weight
         elif type=='RIGHT_ARROW':
-            context.object.location.x -= 1
+            context.object.location.x -= 1 * self.weight
         elif type=='C':
-            context.object.location.z -= 1
+            context.object.location.z -= 1 * self.weight
         elif type=='V':
-            context.object.location.z += 1
+            context.object.location.z += 1 * self.weight
 
     def modal(self, context, event):
+        if not event.is_repeat:
+            self.weight = 0.1
         if event.type == 'LEFTMOUSE':  # Confirm
             return {'FINISHED'}
         elif event.type in {'RIGHTMOUSE', 'ESC'}:  # Cancel
             context.object.location.x = self.init_loc_x
             return {'CANCELLED'}
         else:
+            if event.is_repeat and self.weight < 1:
+                self.weight += 0.1
             self.move(context, event.type) # Apply
         return {'RUNNING_MODAL'}
 
     def invoke(self, context, event):
+#        print('invoke')
         self.init_loc_x = context.object.location.x
         self.value = event.mouse_x
         self.execute(context)

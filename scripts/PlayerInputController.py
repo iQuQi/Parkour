@@ -6,6 +6,12 @@ class ModalOperator(bpy.types.Operator):
     bl_label = "Simple Modal Operator"
     
     weight = 0
+    up = False
+    left = False
+    down = False
+    right = False
+    crouch = False
+    jump = False
     
     def __init__(self):
         print("Start")
@@ -17,23 +23,58 @@ class ModalOperator(bpy.types.Operator):
 #        context.object.location.x = self.value / 100.0
         return {'FINISHED'}
     
-    def move(self, context, type):
-        if type=='UP_ARROW':
-            context.object.location.y -= 1 * self.weight
-        elif type=='DOWN_ARROW':
-            context.object.location.y += 1 * self.weight
-        elif type=='LEFT_ARROW':
-            context.object.location.x += 1 * self.weight
-        elif type=='RIGHT_ARROW':
-            context.object.location.x -= 1 * self.weight
-        elif type=='C':
-            context.object.location.z -= 1 * self.weight
-        elif type=='V':
-            context.object.location.z += 1 * self.weight
+    def setMove(self, type, value):
+        if type=='UP_ARROW':         
+            if value == 'PRESS':
+                self.up = True
+            elif value == 'RELEASE':
+                self.up = False
+        if type=='DOWN_ARROW':
+            if value == 'PRESS':
+                self.down = True
+            elif value == 'RELEASE':
+                self.down = False         
+        if type=='LEFT_ARROW':
+            if value == 'PRESS':
+                self.left = True
+            elif value == 'RELEASE':
+                self.left = False       
+        if type=='RIGHT_ARROW':
+            if value == 'PRESS':
+                self.right = True
+            elif value == 'RELEASE':
+                self.right = False
 
+        if type=='C':
+            if value == 'PRESS':
+                self.crouch = True
+            elif value == 'RELEASE':
+                self.crouch = False
+          
+        if type=='V':
+            if value == 'PRESS':
+                self.jump = True
+            elif value == 'RELEASE':
+                self.jump = False
+            
+
+    def move(self, context):
+        if self.up:
+            context.object.location.y -= 1 * self.weight
+        if self.down:
+            context.object.location.y += 1 * self.weight
+        if self.left:
+            context.object.location.x += 1 * self.weight
+        if self.right:
+            context.object.location.x -= 1 * self.weight
+        if self.crouch:
+            context.object.location.z -= 1 * self.weight
+        if self.jump:
+            context.object.location.z += 1 * self.weight
+        
     def modal(self, context, event):
         if not event.is_repeat:
-            self.weight = 0.1
+            self.weight = 0.5
         if event.type == 'LEFTMOUSE':  # Confirm
             return {'FINISHED'}
         elif event.type in {'RIGHTMOUSE', 'ESC'}:  # Cancel
@@ -42,7 +83,9 @@ class ModalOperator(bpy.types.Operator):
         else:
             if event.is_repeat and self.weight < 1:
                 self.weight += 0.1
-            self.move(context, event.type) # Apply
+            self.setMove(event.type, event.value) # Apply
+            
+        self.move(context)
         return {'RUNNING_MODAL'}
 
     def invoke(self, context, event):

@@ -12,6 +12,8 @@ class ModalOperator(bpy.types.Operator):
     right = False
     crouch = False
     jump = False
+    input_location = [0,0,0]
+    desired_direction = [0,0,0]
     
     def __init__(self):
         print("Start")
@@ -60,17 +62,19 @@ class ModalOperator(bpy.types.Operator):
 
     def move(self, context):
         if self.up:
-            context.object.location.y -= 1 * self.weight
+            context.object.location.y += (-1) * self.weight
         if self.down:
             context.object.location.y += 1 * self.weight
         if self.left:
             context.object.location.x += 1 * self.weight
         if self.right:
-            context.object.location.x -= 1 * self.weight
+            context.object.location.x += (-1) * self.weight
         if self.crouch:
-            context.object.location.z -= 1 * self.weight
+            context.object.location.z += (-1) * self.weight
         if self.jump:
             context.object.location.z += 1 * self.weight
+
+        input_location = [context.object.location.x, context.object.location.y, context.object.location.z]
         
     def modal(self, context, event):
         if not event.is_repeat:
@@ -102,10 +106,16 @@ class ModalOperator(bpy.types.Operator):
 def menu_func(self, context):
     self.layout.operator(ModalOperator.bl_idname, text="Modal Operator")
 
-
+def invokeMotionMatcher():
+    print('invokeMotionMatcher')
+    
+    
+    
 # Register and add to the object menu (required to also use F3 search "Modal Operator" for quick access).
 bpy.utils.register_class(ModalOperator)
 bpy.types.VIEW3D_MT_object.append(menu_func)
 
 # test call
 bpy.ops.object.modal_operator('INVOKE_DEFAULT')
+
+

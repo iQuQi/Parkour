@@ -1,43 +1,61 @@
-import sys
-sys.path.append('/Users/yujin/Documents/GitHub/parkour')
-sys.path.append('/Users/yujin/Documents/GitHub/parkour/scripts')
-sys.path.append('/Users/yujin/Library/Python/3.9/lib/python/site-packages/keyboard')
+import bpy
 
-from utils.types.constants import *
-from PlayerController import *
 
-import keyboard
+class ModalOperator(bpy.types.Operator):
+    bl_idname = "object.modal_operator"
+    bl_label = "Simple Modal Operator"
 
-class PlayerInputController:
     def __init__(self):
-        self.inputText = ''
-        self.mainCameraForward = VECTOR3        
-        self.mainMove = VECTOR3
-        self.mainJump = False 
+        print("Start")
 
-        #self.mainCharacter = PlayerController()
-        # m_Cam                  
-            
+    def __del__(self):
+        print("End")
 
-    def start():
-        print('start')
+    def execute(self, context):
+#        context.object.location.x = self.value / 100.0
+        return {'FINISHED'}
+    
+    def move(self, context, type):
+        if type=='UP_ARROW':
+            context.object.location.y -= 1
+        elif type=='DOWN_ARROW':
+            context.object.location.y += 1
+        elif type=='LEFT_ARROW':
+            context.object.location.x += 1
+        elif type=='RIGHT_ARROW':
+            context.object.location.x -= 1
+        elif type=='C':
+            context.object.location.z -= 1
+        elif type=='V':
+            context.object.location.z += 1
 
-    def update():
-        print('update')
+    def modal(self, context, event):
+        if event.type == 'LEFTMOUSE':  # Confirm
+            return {'FINISHED'}
+        elif event.type in {'RIGHTMOUSE', 'ESC'}:  # Cancel
+            context.object.location.x = self.init_loc_x
+            return {'CANCELLED'}
+        else:
+            self.move(context, event.type) # Apply
+        return {'RUNNING_MODAL'}
 
-    def fixedUpdate(self):
-        print('fixed update')
+    def invoke(self, context, event):
+        self.init_loc_x = context.object.location.x
+        self.value = event.mouse_x
+        self.execute(context)
+
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
 
 
-def keyboardTest():
-    for key in KEY_CODE.keys():
-        keyboard.add_hotkey(KEY_CODE[key], print, args=[' %s was pressed!' % key])
-    keyboard.wait()
+# Only needed if you want to add into a dynamic menu.
+def menu_func(self, context):
+    self.layout.operator(ModalOperator.bl_idname, text="Modal Operator")
 
 
-if __name__ == '__main__':
-        controller = PlayerInputController()
-        keyboardTest()
+# Register and add to the object menu (required to also use F3 search "Modal Operator" for quick access).
+bpy.utils.register_class(ModalOperator)
+bpy.types.VIEW3D_MT_object.append(menu_func)
 
-        
-
+# test call
+bpy.ops.object.modal_operator('INVOKE_DEFAULT')

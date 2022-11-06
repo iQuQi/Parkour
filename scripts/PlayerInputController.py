@@ -1,5 +1,13 @@
+import sys
+sys.path.insert(1, '/Users/yujin/Documents/GitHub/scripts')
+
+from MotionMatcher import MotionMatcher
+import numpy as np
 import bpy
 
+X = 0
+Y = 1
+Z = 2
 
 class ModalOperator(bpy.types.Operator):
     bl_idname = "object.modal_operator"
@@ -15,6 +23,8 @@ class ModalOperator(bpy.types.Operator):
     input_location = [0,0,0]
     desired_direction = [0,0,0]
     
+    motionMatcher = MotionMatcher()
+
     def __init__(self):
         print("Start")
 
@@ -61,20 +71,25 @@ class ModalOperator(bpy.types.Operator):
             
 
     def move(self, context):
-        if self.up:
-            context.object.location.y += (-1) * self.weight
-        if self.down:
-            context.object.location.y += 1 * self.weight
-        if self.left:
-            context.object.location.x += 1 * self.weight
-        if self.right:
-            context.object.location.x += (-1) * self.weight
-        if self.crouch:
-            context.object.location.z += (-1) * self.weight
-        if self.jump:
-            context.object.location.z += 1 * self.weight
+
 
         input_location = [context.object.location.x, context.object.location.y, context.object.location.z]
+
+        if self.up:
+            input_location[Y] += (-1) * self.weight
+        if self.down:
+            input_location[Y] += 1 * self.weight
+        if self.left:
+            input_location[X] += 1 * self.weight
+        if self.right:
+            input_location[X] += (-1) * self.weight
+
+        desired_direction = np.array([input_location[X]-context.object.location.x, input_location[Y]-context.object.location.y, input_location[Z]-context.object.location.z])
+
+        if np.linalg.norm(desired_direction) > 0: 
+            normalized_direction = desired_direction/np.linalg.norm(desired_direction)
+            self.motionMatcher.acquireMatchedMotion(normalized_direction, self.crouch, self.jump)
+
         
     def modal(self, context, event):
         if not event.is_repeat:

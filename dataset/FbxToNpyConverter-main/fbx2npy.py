@@ -1,3 +1,4 @@
+from locale import normalize
 from math import comb
 import bpy
 import os
@@ -125,16 +126,20 @@ def fbx2jointDict():
                     velocity=[0,0,0]
                     angular_velocity=[0,0,0,0]
                 else:
-                    velocity = [(prev_location[name][X]-local_location[X])*30,(prev_location[name][Y]-local_location[Y])*30, (prev_location[name][Z]-local_location[Z])*30]    
-                    angular_velocity = [(prev_rotation[name].w-local_rotation.w)*30,(prev_rotation[name].x-local_rotation.x)*30,(prev_rotation[name].y-local_rotation.y)*30, (prev_rotation[name].z-local_rotation.z)*30]    
+                    velocity = [(prev_location[name][X]-local_location[X])*30,(prev_location[name][Y]-local_location[Y])*30, (prev_location[name][Z]-local_location[Z])*30]
+                    angular_velocity = [(prev_rotation[name].w-local_rotation.w)*30,(prev_rotation[name].x-local_rotation.x)*30,(prev_rotation[name].y-local_rotation.y)*30, (prev_rotation[name].z-local_rotation.z)*30]
                 
                 # Joint가 Hip일 때 
                 # Trajectory 추가하기
             
                 if(name=='mixamorig:Hips'):
-                    if(i!=0):
-                        out_dict_list[i-1]['trajectory'][0]['desired_direction'] = velocity
-                    trajectory = Trajectory(location, rotation, np.linalg.norm(velocity), velocity, INITIALIZE_VECTOR)
+                    normalized_velocity = [velocity[X]/np.linalg.norm(velocity),velocity[Y]/np.linalg.norm(velocity),velocity[Z]/np.linalg.norm(velocity)]
+                    if(i!=0) and np.linalg.norm(velocity) > 0:
+                        out_dict_list[i-1]['trajectory'][0]['desired_direction'] = normalized_velocity
+                    if np.linalg.norm(velocity) > 0:
+                        trajectory = Trajectory(location, rotation, np.linalg.norm(velocity), normalized_velocity, INITIALIZE_VECTOR)
+                    else:
+                        trajectory = Trajectory(location, rotation, 0, INITIALIZE_VECTOR, INITIALIZE_VECTOR)
                     out_dict['trajectory'].append(trajectory.__dict__)
                         
                 

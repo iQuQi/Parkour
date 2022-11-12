@@ -133,14 +133,17 @@ def fbx2jointDict():
                 # Trajectory 추가하기
             
                 if(name=='mixamorig:Hips'):
-                    normalized_velocity = [velocity[X]/np.linalg.norm(velocity),velocity[Y]/np.linalg.norm(velocity),velocity[Z]/np.linalg.norm(velocity)]
-                    if(i!=0) and np.linalg.norm(velocity) > 0:
-                        out_dict_list[i-1]['trajectory'][0]['desired_direction'] = normalized_velocity
                     if np.linalg.norm(velocity) > 0:
+                        normalized_velocity = [velocity[X]/np.linalg.norm(velocity),velocity[Y]/np.linalg.norm(velocity),velocity[Z]/np.linalg.norm(velocity)]
                         trajectory = Trajectory(location, rotation, np.linalg.norm(velocity), normalized_velocity, INITIALIZE_VECTOR)
                     else:
                         trajectory = Trajectory(location, rotation, 0, INITIALIZE_VECTOR, INITIALIZE_VECTOR)
+
+                    if(i!=0) and np.linalg.norm(velocity) > 0:
+                        out_dict_list[i-1]['trajectory'][0]['desired_direction'] = normalized_velocity
                     out_dict['trajectory'].append(trajectory.__dict__)
+
+
                         
                 
                 if(i!=0):

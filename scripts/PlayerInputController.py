@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(1, '/Users/yujin/Documents/GitHub/scripts')
+sys.path.insert(1, '/Users/yujin/Documents/GitHub/parkour/scripts')
 
 from MotionMatcher import MotionMatcher
 import numpy as np
@@ -8,6 +8,7 @@ import bpy
 X = 0
 Y = 1
 Z = 2
+UPDATE_TIME = 0
 
 class ModalOperator(bpy.types.Operator):
     bl_idname = "object.modal_operator"
@@ -88,12 +89,15 @@ class ModalOperator(bpy.types.Operator):
 
         if np.linalg.norm(desired_direction) > 0: 
             normalized_direction = desired_direction/np.linalg.norm(desired_direction)
-            self.motionMatcher.acquireMatchedMotion(normalized_direction, self.crouch, self.jump)
+            self.motionMatcher.updateMatchedMotion(normalized_direction, self.crouch, self.jump)
+        else:
+            self.motionMatcher.time = UPDATE_TIME
+            bpy.ops.screen.animation_cancel()
 
         
     def modal(self, context, event):
         if not event.is_repeat:
-            self.weight = 0.5
+            self.weight = 0.3
         if event.type == 'LEFTMOUSE':  # Confirm
             return {'FINISHED'}
         elif event.type in {'RIGHTMOUSE', 'ESC'}:  # Cancel

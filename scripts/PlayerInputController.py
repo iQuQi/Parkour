@@ -1,7 +1,8 @@
 import sys
+import os
 
 # TODO:경로 수정해야 함
-sys.path.insert(1, '/Users/yujin/Documents/GitHub/parkour/scripts')
+sys.path.insert(1, os.path.dirname(os.path.dirname(os.path.realpath(__file__)))+'/scripts')
 
 from MotionMatcher import MotionMatcher
 import numpy as np

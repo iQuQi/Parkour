@@ -13,7 +13,8 @@ WRONG_PREFIX = 'mixamorig9'
 CORRECT_PREFIX = 'mixamorig'
 
 # TODO:경로 수정해야 함
-frames=np.load('/Users/yujin/Documents/GitHub/parkour/dataset/DataSet.npy', allow_pickle=True)
+# frames=np.load('/Users/yujin/Documents/GitHub/parkour/dataset/DataSet.npy', allow_pickle=True)
+frames = np.load(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))+'/dataset/DataSet.npy', allow_pickle=True)
 
 class MotionMatcher:
     motion = ''

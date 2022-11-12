@@ -30,6 +30,10 @@ class Joint:
         self.rotation = rotation
         self.angular_velocity = angular_velocity
      
+class AnimInfo:
+    def __init__(self, name, index):
+        self.name = name
+        self.index = index
 
 #Crucial joints sufficient for visualisation #FIX ME - Add more joints if desirable for MixamRig
 BASE_JOINT_NAMES = ['Head', 'Neck',
@@ -51,7 +55,7 @@ OUT_DATA_DIR ='fbx2json'
 FINAL_DIR_PATH ='json2npy'
 
 #Combined Files Path
-COMBINED_FILE_PATH = '/Users/yujin/Documents/GitHub/parkour/dataset/'
+COMBINED_FILE_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))+'/dataset'
 
 INITIALIZE_VECTOR = [0,0,0]
 
@@ -110,7 +114,7 @@ def fbx2jointDict():
             bpy.context.scene.frame_set(i)
             bone_struct = bpy.data.objects['Armature'].pose.bones
 
-            out_dict = {'joints': [], 'trajectory':[]}       
+            out_dict = {'joints': [], 'trajectory':[], 'animInfo':[]}       
                      
             
             # TEST 1
@@ -132,7 +136,7 @@ def fbx2jointDict():
                 # Joint가 Hip일 때 
                 # Trajectory 추가하기
             
-                if(name=='mixamorig:Hips'):
+                if(name=='mixamorig:Hips' or name=='mixamorig9:Hips'):
                     if np.linalg.norm(velocity) > 0:
                         normalized_velocity = [velocity[X]/np.linalg.norm(velocity),velocity[Y]/np.linalg.norm(velocity),velocity[Z]/np.linalg.norm(velocity)]
                         trajectory = Trajectory(location, rotation, np.linalg.norm(velocity), normalized_velocity, INITIALIZE_VECTOR)
@@ -156,6 +160,8 @@ def fbx2jointDict():
                 prev_location[name] = location
                 prev_rotation[name] = local_rotation.copy()
             
+            animInfo = AnimInfo(anim_name, i)
+            out_dict['animInfo'].append(animInfo.__dict__)
             out_dict_list.append(out_dict)
         
         for i in range(len(out_dict_list)):

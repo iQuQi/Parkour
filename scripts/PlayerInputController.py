@@ -1,4 +1,6 @@
 import sys
+
+# TODO:경로 수정해야 함
 sys.path.insert(1, '/Users/yujin/Documents/GitHub/parkour/scripts')
 
 from MotionMatcher import MotionMatcher

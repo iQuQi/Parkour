@@ -55,7 +55,7 @@ OUT_DATA_DIR ='fbx2json'
 FINAL_DIR_PATH ='json2npy'
 
 #Combined Files Path
-COMBINED_FILE_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))+'/dataset'
+COMBINED_FILE_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))+'/'
 
 INITIALIZE_VECTOR = [0,0,0]
 
@@ -192,8 +192,9 @@ def jointDict2npy():
                 info = json.load(f)
                 joint_2_npy = np.array(info['joints'])
                 trajectory_2_npy = np.array(info['trajectory'])
+                animInfo_2_npy = np.array(info['animInfo'])
             
-            motion.append([trajectory_2_npy] + [joint_2_npy])
+            motion.append([trajectory_2_npy] + [joint_2_npy] + [animInfo_2_npy])
         
         
         save_path = os.path.join(npy_dir,anim_name)

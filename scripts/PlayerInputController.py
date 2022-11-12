@@ -92,7 +92,7 @@ class ModalOperator(bpy.types.Operator):
             self.motionMatcher.updateMatchedMotion(normalized_direction, self.crouch, self.jump)
         else:
             self.motionMatcher.time = UPDATE_TIME
-            bpy.ops.screen.animation_cancel()
+            bpy.ops.screen.animation_cancel(restore_frame=False)
 
         
     def modal(self, context, event):

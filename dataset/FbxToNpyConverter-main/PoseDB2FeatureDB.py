@@ -59,7 +59,8 @@ def poseDB2featureDB():
     file_path = os.path.join(COMBINED_FILE_PATH, 'PoseDB.json')
     with open(file_path, 'r') as f:
         frames=json.load(f)
-    features = []
+    features_npy = []
+    features_json = []
 
     for i in range(10, len(frames)-20):
         FRAME = frames[i]['joints']
@@ -89,9 +90,14 @@ def poseDB2featureDB():
             Rfoot_location, Rfoot_speed, Lfoot_location, Lfoot_speed, 
             trajectory_location, trajectory_direction)
 
-        features.append(np.array(new_feature.__dict__))
+        features_npy.append(np.array(new_feature.__dict__))
+        features_json.append(new_feature.__dict__)
 
-    np.save(COMBINED_FILE_PATH + 'featureDB.npy', features)
+    np.save(COMBINED_FILE_PATH + 'featureDB.npy', features_npy)
+    
+    save_path = os.path.join(COMBINED_FILE_PATH,'featureDB.json')
+    with open(save_path,'w') as f:
+        json.dump(features_json, f)
 
         
 if __name__ == '__main__':

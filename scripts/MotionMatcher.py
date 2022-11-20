@@ -96,12 +96,11 @@ class MotionMatcher:
             # bpy.data.objects['Armature'].pose.bones['mixamorig:Hips'].location = prevLocation
             C = bpy.data.objects['Armature'].pose.bones['mixamorig:Hips'].location.copy()/100
             now = A-C
-            print('A: ', A)
-            print('B: ', B)
-            print('C: ', C)
-            print(now)
-            print(now[0], now[1], now[2])
-            bpy.ops.transform.translate(value=(now[0], now[1], now[2]), orient_axis_ortho='X', orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', mirror=False, use_proportional_edit=False, proportional_edit_falloff='SMOOTH', proportional_size=1, use_proportional_connected=False, use_proportional_projected=False, snap=False, snap_elements={'INCREMENT'}, use_snap_project=False, snap_target='CLOSEST', use_snap_self=False, use_snap_edit=False, use_snap_nonedit=False, use_snap_selectable=False)
+            # print('A: ', A)
+            # print('B: ', B)
+            # print('C: ', C)
+            # print(now)
+            #bpy.ops.transform.translate(value=(now[0], now[1], now[2]), orient_axis_ortho='X', orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', mirror=False, use_proportional_edit=False, proportional_edit_falloff='SMOOTH', proportional_size=1, use_proportional_connected=False, use_proportional_projected=False, snap=False, snap_elements={'INCREMENT'}, use_snap_project=False, snap_target='CLOSEST', use_snap_self=False, use_snap_edit=False, use_snap_nonedit=False, use_snap_selectable=False)
             print(bpy.data.objects['Armature'].location)
             # bpy.context.object.location[0] = 10
 

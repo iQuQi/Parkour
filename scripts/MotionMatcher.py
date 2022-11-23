@@ -5,20 +5,16 @@ import os
 import re
 import bpy
 import json
+import random
 
 #Combined Files Path
 COMBINED_FILE_PATH = os.path.abspath('dataSet.npy')
 INTERVAL_TIME = 10
 UPDATE_TIME = 0
 
-# TODO:경로 수정해야 함
-# frames=np.load('/Users/yujin/Documents/GitHub/parkour/dataset/DataSet.npy', allow_pickle=True)
 pose_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + '/dataset/PoseDB.json'
-print('test!!!', pose_path)
-
 with open(pose_path, 'r') as f:
     poses = json.load(f)
-
 feature_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + '/dataset/FeatureDB.json'
 with open(feature_path, 'r') as f:
     features = json.load(f)
@@ -29,7 +25,8 @@ class MotionMatcher:
     time = UPDATE_TIME
     # 메인 캐릭터
     mainObj = ''
-
+    matched_frame_index = -1
+     
     def __init__(self):
         self.motion = 'idle'
         self.mainObj = ''
@@ -41,38 +38,37 @@ class MotionMatcher:
         print('update')
 
     def updateMatchedMotion(self, query, crouch, jump):
-        print('Function CALL - UpdateMatchedMotion:   ',self.time)
-        min_diff = 100000000
-        matched_frame_index = 30
+        print('Function CALL - UpdateMatchedMotion:   ',self.time, len(poses))
+        # min_diff = 100000000
+        obj = bpy.context.object
+        bone_struct = obj.pose.bones
+        joint_names = bone_struct.keys()
         
         if self.time == UPDATE_TIME:
-            obj = bpy.context.object
             print('---------------UPDATE TIME ----------------')
-            
             # TODO: 매칭 알고리즘 (임시)
             # for index, frame in enumerate(features):
             #     desired_direction_data = frame[0][0]['desired_direction']
             #     now_diff = np.linalg.norm(query - desired_direction_data)
             #     if (now_diff < min_diff):
             #         min_diff = now_diff
-            #         matched_frame_index = index
+            #         self.matched_frame_index = index
             
-            print('선택된 프레임 = ', matched_frame_index) 
-            
-            bone_struct = obj.pose.bones
-            joint_names = bone_struct.keys()
-
-            for joint in joint_names:
-                bone_struct[joint].location = poses[matched_frame_index]['joints'][joint]['location']
-                bone_struct[joint].rotation_quaternion = poses[matched_frame_index]['joints'][joint]['rotation']
+            self.matched_frame_index = random.randint(1,70)
+            print('선택된 프레임 = ',self.matched_frame_index) 
         
-            # TODO: 조인트 이름 재설정 (조인트 이름이 다르면 액션 적용이 안됨!) - 완료
-            # TODO: 입력이 멈추면 애니메이션도 멈추기 - 완료 => 천천히 속도를 줄이도록 변경해야함
-            # TODO: 프레임 데이터 셋에 애니메이션과 프레임 번호 데이터 추가하기 -> 오늘
-
-
-
-
+            # TODO: 입력이 멈추면 천천히 속도를 줄이도록 변경해야함
             self.time = INTERVAL_TIME
+        else: 
+            self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
 
+        print('CHANGE FRAME TO => ',self.matched_frame_index )
+
+        for joint in joint_names:
+            bone_struct[joint].rotation_quaternion = poses[self.matched_frame_index]['joints'][joint]['rotation']
+            if joint != 'mixamorig:Hips':
+                bone_struct[joint].location = poses[self.matched_frame_index]['joints'][joint]['location']
+        
         self.time -= 1
+
+     

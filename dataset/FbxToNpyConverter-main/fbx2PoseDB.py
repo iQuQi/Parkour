@@ -10,8 +10,8 @@ import numpy as np
 HOME_FILE_PATH = os.path.abspath('homefile.blend')
 MIN_NR_FRAMES = 64
 RESOLUTION = (512, 512)
-WRONG_PREFIX = 'mixamorig9'
-CORRECT_PREFIX = 'mixamorig'
+WRONG_PREFIX = ['mixamorig1','mixamorig','mixamorig9']
+CORRECT_PREFIX = 'mixamorig2'
 X = 0
 Y = 1
 Z = 2
@@ -135,7 +135,8 @@ def fbx2PoseDB():
 
 
                 joint = Joint(location, rotation, angular_velocity, velocity)
-                out_dict['joints'][name.replace(WRONG_PREFIX, CORRECT_PREFIX)] = joint.__dict__
+                for wrong in WRONG_PREFIX:
+                    out_dict['joints'][name.replace(wrong, CORRECT_PREFIX)] = joint.__dict__
                 
                 prev_location[name] = location
                 prev_rotation[name] = local_rotation.copy()

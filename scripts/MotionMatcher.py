@@ -69,9 +69,15 @@ class MotionMatcher:
 
         for joint in joint_names:
             bone_struct[joint].rotation_quaternion = poses[self.matched_frame_index]['joints'][joint]['rotation']
-            if joint != 'mixamorig:Hips':
-                bone_struct[joint].location = poses[self.matched_frame_index]['joints'][joint]['location']
+            value = [0,0,0]
+            if self.time == UPDATE_TIME and joint == 'mixamorig2:Hips':
+                value = poses[self.matched_frame_index]['joints'][joint]['location']
+                print('이거', value)
+                
+            if joint == 'mixamorig2:Hips': bone_struct[joint].location = list(set(poses[self.matched_frame_index]['joints'][joint]['location']) - set(value))  
+            else: bone_struct[joint].location = poses[self.matched_frame_index]['joints'][joint]['location']
         
-        self.time -= 1
+        if self.time == UPDATE_TIME: self.time = INTERVAL_TIME
+        else:  self.time -= 1
 
      

@@ -64,25 +64,25 @@ def poseDB2featureDB():
 
     for i in range(10, len(frames)-20):
         FRAME = frames[i]['joints']
-        key='mixamorig:Hips'
+        key='mixamorig2:Hips'
         print('TEST', FRAME )
-        root_speed = np.linalg.norm(FRAME['mixamorig:Hips']['velocity']) 
+        root_speed = np.linalg.norm(FRAME['mixamorig2:Hips']['velocity']) 
 
-        Rfoot_location = FRAME['mixamorig:RightFoot']['location']
-        Rfoot_speed = np.linalg.norm(FRAME['mixamorig:RightFoot']['velocity'])  
+        Rfoot_location = FRAME['mixamorig2:RightFoot']['location']
+        Rfoot_speed = np.linalg.norm(FRAME['mixamorig2:RightFoot']['velocity'])  
 
-        Lfoot_location = FRAME['mixamorig:LeftFoot']['location']
-        Lfoot_speed = np.linalg.norm(FRAME['mixamorig:LeftFoot']['velocity']) 
+        Lfoot_location = FRAME['mixamorig2:LeftFoot']['location']
+        Lfoot_speed = np.linalg.norm(FRAME['mixamorig2:LeftFoot']['velocity']) 
 
-        BEFORE10 = frames[i-10]['joints']['mixamorig:Hips']
-        BEFORE5 = frames[i-5]['joints']['mixamorig:Hips']
-        NOW = frames[i]['joints']['mixamorig:Hips']
-        FUTURE5 = frames[i+5]['joints']['mixamorig:Hips']
-        FUTURE10 = frames[i+10]['joints']['mixamorig:Hips']
-        FUTURE20 = frames[i+20]['joints']['mixamorig:Hips']
+        BEFORE10 = frames[i-10]['joints']['mixamorig2:Hips']
+        BEFORE5 = frames[i-5]['joints']['mixamorig2:Hips']
+        NOW = frames[i]['joints']['mixamorig2:Hips']
+        FUTURE5 = frames[i+5]['joints']['mixamorig2:Hips']
+        FUTURE10 = frames[i+10]['joints']['mixamorig2:Hips']
+        FUTURE20 = frames[i+20]['joints']['mixamorig2:Hips']
 
-        trajectory_location =[BEFORE10['location']-NOW['location'],BEFORE5['location']-NOW['location'],NOW['location'],
-                                    FUTURE5['location']-NOW['location'],FUTURE10['location']-NOW['location'],FUTURE20['location']-NOW['location']]
+        trajectory_location =[list(set(BEFORE10['location'])-set(NOW['location'])),list(set(BEFORE5['location'])-set(NOW['location'])),list(set(NOW['location'])),
+                                    list(set(FUTURE5['location'])-set(NOW['location'])),list(set(FUTURE10['location'])-set(NOW['location'])),list(set(FUTURE20['location'])-set(NOW['location']))]
         trajectory_direction = [BEFORE10['velocity'],BEFORE5['velocity'],NOW['velocity'],
                                     FUTURE5['velocity'],FUTURE10['velocity'],FUTURE20['velocity']]
 

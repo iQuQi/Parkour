@@ -37,6 +37,9 @@ class MotionMatcher:
     def update():
         print('update')
 
+    def getCurrentPose(self):
+        return poses[self.matched_frame_index]['joints']
+
     def updateMatchedMotion(self, query, crouch, jump):
         print('Function CALL - UpdateMatchedMotion:   ',self.time, len(poses))
         # min_diff = 100000000

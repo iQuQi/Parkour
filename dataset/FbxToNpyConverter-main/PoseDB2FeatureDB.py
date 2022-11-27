@@ -81,8 +81,8 @@ def poseDB2featureDB():
         FUTURE10 = frames[i+10]['joints']['mixamorig:Hips']
         FUTURE20 = frames[i+20]['joints']['mixamorig:Hips']
 
-        trajectory_location =[BEFORE10['location'],BEFORE5['location'],NOW['location'],
-                                    FUTURE5['location'],FUTURE10['location'],FUTURE20['location']]
+        trajectory_location =[BEFORE10['location']-NOW['location'],BEFORE5['location']-NOW['location'],NOW['location'],
+                                    FUTURE5['location']-NOW['location'],FUTURE10['location']-NOW['location'],FUTURE20['location']-NOW['location']]
         trajectory_direction = [BEFORE10['velocity'],BEFORE5['velocity'],NOW['velocity'],
                                     FUTURE5['velocity'],FUTURE10['velocity'],FUTURE20['velocity']]
 

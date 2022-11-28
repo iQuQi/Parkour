@@ -6,11 +6,10 @@ import re
 import bpy
 import json
 import random
-import utils.common as common
+from utils.common import *
 
 #Combined Files Path
 COMBINED_FILE_PATH = os.path.abspath('dataSet.npy')
-UPDATE_TIME = 5
 
 upper_dir_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
@@ -63,11 +62,15 @@ class MotionMatcher:
             jointLocation = poses[self.matched_frame_index]['joints'][joint]['location']
             # 힙 조인트 위치정보 업데이트                
             if joint == 'mixamorig2:Hips': 
+
                 if self.time == UPDATE_TIME:
-                    self.updateDiff = common.substractArray3(self.prevRootLocation,jointLocation)
+                    self.updateDiff = substractArray3(self.prevRootLocation,jointLocation)
+                elif np.linalg.norm(substractArray3(addArray3(jointLocation, self.updateDiff),self.prevRootLocation)) > 100:
+                    print('[임시로 예외처리]:',np.linalg.norm(substractArray3(addArray3(jointLocation, self.updateDiff),self.prevRootLocation)))
+                    self.updateDiff = substractArray3(self.prevRootLocation,jointLocation)
                 
                 # 위치 보정
-                bone_struct[joint].location = common.addArray3(jointLocation, self.updateDiff)
+                bone_struct[joint].location = addArray3(jointLocation, self.updateDiff)
                 # 현재 힙 위치 저장해두기
                 self.prevRootLocation = bone_struct[joint].location.copy()
 

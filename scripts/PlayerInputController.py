@@ -7,11 +7,8 @@ sys.path.insert(1, os.path.dirname(os.path.dirname(os.path.realpath(__file__)))+
 from MotionMatcher import MotionMatcher
 import numpy as np
 import bpy
+from utils.common import *
 
-X = 0
-Y = 1
-Z = 2
-UPDATE_TIME = 5
 JUMP = 'V'
 CROUCH = 'C'
 

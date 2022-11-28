@@ -7,11 +7,15 @@ import sys
 import json
 from mathutils import Vector
 import numpy as np 
+
 HOME_FILE_PATH = os.path.abspath('homefile.blend')
 MIN_NR_FRAMES = 64
 RESOLUTION = (512, 512)
-WRONG_PREFIX = ['mixamorig1','mixamorig','mixamorig9']
+
+WRONG_PREFIX = ['mixamorig','mixamorig1','mixamorig3','mixamorig4','mixamorig5','mixamorig6',
+'mixamorig7','mixamorig8','mixamorig9','mixamorig10','mixamorig11','mixamorig12']
 CORRECT_PREFIX = 'mixamorig2'
+
 X = 0
 Y = 1
 Z = 2
@@ -30,17 +34,6 @@ class Joint:
         self.angularVelocity = angular_velocity
         self.velocity = velocity     
 
-
-#Crucial joints sufficient for visualisation #FIX ME - Add more joints if desirable for MixamRig
-# BASE_JOINT_NAMES = ['Head', 'Neck',
-#                     'RightArm', 'RightHand', 
-#                     'LeftArm', 'LeftHand',
-#                     'Hips', 
-#                     'RightUpLeg',  'RightFoot', 
-#                     'LeftUpLeg',  'LeftFoot',
-#                     ]
-
-
 #Source directory where .fbx exist
 SRC_DATA_DIR ='regular'
 
@@ -54,9 +47,6 @@ FINAL_DIR_PATH ='json2npy'
 COMBINED_FILE_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))+'/'
 
 INITIALIZE_VECTOR = [0,0,0]
-
-#Number of joints to be used from MixamoRig
-# joint_names = ['mixamorig:' + x for x in BASE_JOINT_NAMES]
 
 def fbx2PoseDB():
     
@@ -84,6 +74,8 @@ def fbx2PoseDB():
     #Make OUT_DATA_DIR
     if not os.path.exists(OUT_DATA_DIR):
         os.makedirs(OUT_DATA_DIR)    
+
+    combined_out_dict_list = []
     
     # for anim_name in anims_path:
     for anim_name in anims_path: 
@@ -114,7 +106,7 @@ def fbx2PoseDB():
             out_dict = {'joints': {}, 'animInfo': []}       
                     
             
-            for idx, name in enumerate(joint_names):
+            for name in joint_names:
                 local_location = bone_struct[name].matrix_basis @ Vector((0, 0, 0))
                 local_rotation = bone_struct[name].rotation_quaternion
 
@@ -150,9 +142,12 @@ def fbx2PoseDB():
             with open(save_path,'w') as f:
                 json.dump(out_dict_list[i], f)
 
-        save_path = os.path.join(COMBINED_FILE_PATH,'PoseDB.json')
-        with open(save_path,'w') as f:
-            json.dump(out_dict_list, f)
+        combined_out_dict_list.extend(out_dict_list[:-1])
+
+    # json 파일 생성
+    save_path = os.path.join(COMBINED_FILE_PATH,'PoseDB.json')
+    with open(save_path,'w') as f:
+        json.dump(combined_out_dict_list, f)
 
 
 def poseDB2npy():
@@ -218,8 +213,14 @@ if __name__ == '__main__':
     # TEST 2 최종 파일출력
     print('TEST 2 ====================== Combined Data file') 
     frames=np.load(COMBINED_FILE_PATH  + 'PoseDB.npy' , allow_pickle=True)
-    for i in range(len(frames)):
-        print(frames[i])  
+    print('포즈DB 최종 개수-npy:', len(frames))
+
+    file_path = os.path.join(COMBINED_FILE_PATH, 'PoseDB.json')
+    with open(file_path, 'r') as f:
+        frames_2=json.load(f)
+    print('포즈DB 최종 개수-json:', len(frames_2))
+    # for i in range(len(frames)):
+    #     print(frames[i])  
 
 
 

@@ -15,6 +15,11 @@ X = 0
 Y = 1
 Z = 2
 
+def substractArray3(fir,sec):
+    return [fir[0]-sec[0],fir[1]-sec[1],fir[2]-sec[2]]
+
+def getJoint(frames, frameNum,joint):
+    return frames[frameNum]['joints'][joint]
 
 class Feature:
     def __init__(self, 
@@ -28,15 +33,13 @@ class Feature:
 
         # 루트의 미래+과거 궤적(바닥에 투영된 2D)   ====> 과거 -> 현재 -> 미래 (4개)
         self.trajectoryLocation = trajectory_location # [-10, -5, 0, 5, 10, 20]
-        self.trajectoryDirection = trajectory_direction
+        self.trajectoryDirection = trajectory_direction # 각 지점에서의 순간 방향
 
         self.footLocation = {'left': Lfoot_location, 'right': Rfoot_location}
         self.footSpeed =  {'left': Lfoot_speed, 'right': Rfoot_speed}
 
         # TODO: 손 정보 추가
     
-
-
 #Source directory where .fbx exist
 SRC_DATA_DIR ='regular'
 
@@ -51,22 +54,25 @@ COMBINED_FILE_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__))
 
 INITIALIZE_VECTOR = [0,0,0]
 
-def normalizedVector(vector):
-    return [vector[X]/np.linalg.norm(vector),vector[Y]/np.linalg.norm(vector),vector[Z]/np.linalg.norm(vector)]
- 
 
 def poseDB2featureDB():
+
+    # 파일 로드
     file_path = os.path.join(COMBINED_FILE_PATH, 'PoseDB.json')
     with open(file_path, 'r') as f:
         frames=json.load(f)
+    print('Pose2Feature Count:', len(frames))
+
     features_npy = []
     features_json = []
 
-    for i in range(10, len(frames)-20):
+    # TODO 여기서 10 20 해주는게 의미가 없음. 애니메이션별로 해야되는데...ㅠ, 그리고 이렇게 하면 포즈DB 인덱스랑 피쳐DB인덱스가 달라짐
+    for i in range(10,len(frames)-20):
         FRAME = frames[i]['joints']
-        key='mixamorig2:Hips'
-        print('TEST', FRAME )
-        root_speed = np.linalg.norm(FRAME['mixamorig2:Hips']['velocity']) 
+        HIP_KEY = 'mixamorig2:Hips'
+
+        # 포즈 특징 채워주기
+        root_speed = np.linalg.norm(FRAME[HIP_KEY]['velocity']) 
 
         Rfoot_location = FRAME['mixamorig2:RightFoot']['location']
         Rfoot_speed = np.linalg.norm(FRAME['mixamorig2:RightFoot']['velocity'])  
@@ -74,27 +80,30 @@ def poseDB2featureDB():
         Lfoot_location = FRAME['mixamorig2:LeftFoot']['location']
         Lfoot_speed = np.linalg.norm(FRAME['mixamorig2:LeftFoot']['velocity']) 
 
-        BEFORE10 = frames[i-10]['joints']['mixamorig2:Hips']
-        BEFORE5 = frames[i-5]['joints']['mixamorig2:Hips']
-        NOW = frames[i]['joints']['mixamorig2:Hips']
-        FUTURE5 = frames[i+5]['joints']['mixamorig2:Hips']
-        FUTURE10 = frames[i+10]['joints']['mixamorig2:Hips']
-        FUTURE20 = frames[i+20]['joints']['mixamorig2:Hips']
 
-        trajectory_location =[list(set(BEFORE10['location'])-set(NOW['location'])),list(set(BEFORE5['location'])-set(NOW['location'])),list(set(NOW['location'])),
-                                    list(set(FUTURE5['location'])-set(NOW['location'])),list(set(FUTURE10['location'])-set(NOW['location'])),list(set(FUTURE20['location'])-set(NOW['location']))]
-        trajectory_direction = [BEFORE10['velocity'],BEFORE5['velocity'],NOW['velocity'],
-                                    FUTURE5['velocity'],FUTURE10['velocity'],FUTURE20['velocity']]
+        # 궤적 특징 채워주기
+        BEFORE10 = frames[i-10]['joints'][HIP_KEY]
+        BEFORE5 = frames[i-5]['joints'][HIP_KEY]
+        NOW = frames[i]['joints'][HIP_KEY]
+        FUTURE5 = frames[i+5]['joints'][HIP_KEY]
+        FUTURE10 = frames[i+10]['joints'][HIP_KEY]
+        FUTURE20 = frames[i+20]['joints'][HIP_KEY]
 
-        new_feature = Feature(root_speed,
-            Rfoot_location, Rfoot_speed, Lfoot_location, Lfoot_speed, 
-            trajectory_location, trajectory_direction)
+        trajectory_location =[
+                             substractArray3(BEFORE10['location'], NOW['location']),substractArray3(BEFORE5['location'], NOW['location']),
+                             substractArray3(NOW['location'], NOW['location']),substractArray3(FUTURE5['location'], NOW['location']),
+                             substractArray3(FUTURE10['location'],NOW['location']),substractArray3(FUTURE20['location'], NOW['location'])
+                             ]
+        trajectory_direction = [BEFORE10['velocity'],BEFORE5['velocity'],NOW['velocity'],FUTURE5['velocity'],FUTURE10['velocity'],FUTURE20['velocity']]
 
+        new_feature = Feature(root_speed, Rfoot_location, Rfoot_speed, Lfoot_location, Lfoot_speed, trajectory_location, trajectory_direction)
+
+        # 각 파일에 들어갈 피쳐 배열에 추가
         features_npy.append(np.array(new_feature.__dict__))
         features_json.append(new_feature.__dict__)
 
+    # npy, json 파일로 저장하기
     np.save(COMBINED_FILE_PATH + 'featureDB.npy', features_npy)
-    
     save_path = os.path.join(COMBINED_FILE_PATH,'featureDB.json')
     with open(save_path,'w') as f:
         json.dump(features_json, f)
@@ -106,8 +115,9 @@ if __name__ == '__main__':
     # TEST 2 최종 파일출력
     print('TEST 2 ====================== featureDB Data file') 
     frames=np.load(COMBINED_FILE_PATH  + 'featureDB.npy' , allow_pickle=True)
-    for i in range(len(frames)):
-        print(frames[i])  
+    print('피쳐DB 최종 개수:', len(frames))
+    # for i in range(len(frames)):
+    #     print(frames[i])  
 
 
 

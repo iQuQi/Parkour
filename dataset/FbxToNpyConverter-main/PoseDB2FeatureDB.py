@@ -26,7 +26,7 @@ class Feature:
     root_speed,
     Rfoot_location, Rfoot_speed, 
     Lfoot_location, Lfoot_speed, 
-    trajectory_location, trajectory_direction):
+    trajectory_location, trajectory_direction, index):
 
         # 속도
         self.rootSpeed = root_speed
@@ -37,6 +37,8 @@ class Feature:
 
         self.footLocation = {'left': Lfoot_location, 'right': Rfoot_location}
         self.footSpeed =  {'left': Lfoot_speed, 'right': Rfoot_speed}
+
+        self.poseIndex = index
 
         # TODO: 손 정보 추가
     
@@ -66,10 +68,25 @@ def poseDB2featureDB():
     features_npy = []
     features_json = []
 
-    # TODO 여기서 10 20 해주는게 의미가 없음. 애니메이션별로 해야되는데...ㅠ, 그리고 이렇게 하면 포즈DB 인덱스랑 피쳐DB인덱스가 달라짐
-    for i in range(10,len(frames)-20):
+    now_start_index = 0
+    now_end_index = 0
+
+    for i in range(len(frames)):
         FRAME = frames[i]['joints']
-        HIP_KEY = 'mixamorig2:Hips'
+        ANIM_INFO = frames[i]['animInfo'][0]
+        HIP_KEY = 'mixamorig2:Hips' 
+        print('anim info',ANIM_INFO)
+
+        if i == 0:
+            now_end_index = ANIM_INFO['end']
+
+        if ANIM_INFO['start'] != now_start_index:
+            now_start_index = ANIM_INFO['start']
+            now_end_index =  ANIM_INFO['end']
+
+        if i < (now_start_index + 10) or i > (now_end_index - 20):
+            continue
+ 
 
         # 포즈 특징 채워주기
         root_speed = np.linalg.norm(FRAME[HIP_KEY]['velocity']) 
@@ -96,7 +113,7 @@ def poseDB2featureDB():
                              ]
         trajectory_direction = [BEFORE10['velocity'],BEFORE5['velocity'],NOW['velocity'],FUTURE5['velocity'],FUTURE10['velocity'],FUTURE20['velocity']]
 
-        new_feature = Feature(root_speed, Rfoot_location, Rfoot_speed, Lfoot_location, Lfoot_speed, trajectory_location, trajectory_direction)
+        new_feature = Feature(root_speed, Rfoot_location, Rfoot_speed, Lfoot_location, Lfoot_speed, trajectory_location, trajectory_direction, ANIM_INFO['index'])
 
         # 각 파일에 들어갈 피쳐 배열에 추가
         features_npy.append(np.array(new_feature.__dict__))

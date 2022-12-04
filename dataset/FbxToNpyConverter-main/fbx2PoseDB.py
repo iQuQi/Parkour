@@ -32,7 +32,7 @@ class Joint:
         self.location = location
         self.rotation = rotation
         self.angularVelocity = angular_velocity
-        self.velocity = velocity     
+        self.velocity = velocity  
 
 #Source directory where .fbx exist
 SRC_DATA_DIR ='regular'
@@ -76,6 +76,10 @@ def fbx2PoseDB():
         os.makedirs(OUT_DATA_DIR)    
 
     combined_out_dict_list = []
+
+    global_index = 0
+    start_index = 0 
+    end_index = 0
     
     # for anim_name in anims_path:
     for anim_name in anims_path: 
@@ -92,13 +96,14 @@ def fbx2PoseDB():
         
         #End Frame Index for .fbx file
         frame_end = bpy.data.actions[0].frame_range[1]
+        start_index = global_index
+        end_index = start_index + int(frame_end)
 
         prev_location = {}
         prev_rotation = {}
         out_dict_list = []
         
         for i in range(int(frame_end)+1):
-      
             bpy.context.scene.frame_set(i)
             bone_struct = bpy.data.objects['Armature'].pose.bones
             joint_names = bone_struct.keys()
@@ -133,10 +138,11 @@ def fbx2PoseDB():
                 prev_location[name] = location
                 prev_rotation[name] = local_rotation.copy()
             
-            animInfo = AnimInfo(anim_name, index = i, start = 0, end = int(frame_end))
+            animInfo = AnimInfo(anim_name, index = global_index, start = start_index, end = end_index)
             out_dict['animInfo'].append(animInfo.__dict__)
             out_dict_list.append(out_dict)
-        
+            global_index += 1
+
         for i in range(len(out_dict_list)):
             save_path = os.path.join(save_dir,'%04d_keypoints.json'%i)
             with open(save_path,'w') as f:

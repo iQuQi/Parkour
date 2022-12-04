@@ -7,6 +7,7 @@ import bpy
 import json
 import random
 from utils.common import *
+from scipy import spatial 
 
 #Combined Files Path
 COMBINED_FILE_PATH = os.path.abspath('dataSet.npy')
@@ -26,9 +27,21 @@ class MotionMatcher:
     matched_frame_index = -1
     prevRootLocation = [0,0,0]
     updateDiff = [0,0,0]
+    tree = ''
      
     def __init__(self):
         self.motion = 'idle'
+        # 트리 생성해주기
+        point_list = []
+        for feature in features:
+            point = [feature['rootSpeed'],feature['trajectoryLocation'],feature['trajectoryDirection'],
+                        feature['footLocation']['left'],feature['footLocation']['right'],
+                        feature['footSpeed']['left'], feature['footSpeed']['right']]
+            point_list.append(point)
+        
+        print('-----[트리 생성]------', point_list)
+        self.tree = spatial.KDTree(point_list)
+
 
     def start():
         print('START')
@@ -47,9 +60,12 @@ class MotionMatcher:
         
         # 매칭 프레임 찾기
         if self.time == UPDATE_TIME:
-            # TODO: 매칭 알고리즘            
-            self.matched_frame_index = random.randint(1,1440)
-            print('---------UPDATE TIME --------- [선택된 프레임] :',self.matched_frame_index) 
+            # 쿼리벡터 넣어주기
+            #distance, findIndex = self.tree.query(query)
+            #print('KD tree 테스트 코드!!! ---',distance, findIndex)
+
+            self.matched_frame_index = random.randint(1,1900)
+            #self.matched_frame_index = findIndex
         else: 
             self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
         print('CHANGE FRAME TO => ',self.matched_frame_index )

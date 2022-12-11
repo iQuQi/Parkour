@@ -15,8 +15,10 @@ X = 0
 Y = 1
 Z = 2
 
-def substractArray3(fir,sec):
-    return [fir[0]-sec[0],fir[1]-sec[1],fir[2]-sec[2]]
+def global2local(fir,M ):
+    tmp = fir.copy()
+    tmp.append(1)
+    return (M@tmp)[:-1].tolist()
 
 def getJoint(frames, frameNum,joint):
     return frames[frameNum]['joints'][joint]
@@ -106,12 +108,24 @@ def poseDB2featureDB():
         FUTURE10 = frames[i+10]['joints'][HIP_KEY]
         FUTURE20 = frames[i+20]['joints'][HIP_KEY]
 
+
+        z_w = frames[i+1]['joints'][HIP_KEY]['velocity'] # z_w
+        print(z_w)
+        x_u = np.cross([0,0,1], z_w)
+        x_u = x_u/np.linalg.norm(x_u)
+        y_v = np.cross(z_w, x_u)
+        M = [[x_u[0], z_w[0], y_v[0], NOW['location'][0]],
+            [x_u[1], z_w[1], y_v[1], NOW['location'][1]],
+            [x_u[2], z_w[2], y_v[2], NOW['location'][2]],
+            [0, 0, 0, 1]]
+
+        M = np.linalg.inv(M)
         trajectory_location =[
-                             substractArray3(BEFORE10['location'], NOW['location']),substractArray3(BEFORE5['location'], NOW['location']),
-                             substractArray3(NOW['location'], NOW['location']),substractArray3(FUTURE5['location'], NOW['location']),
-                             substractArray3(FUTURE10['location'],NOW['location']),substractArray3(FUTURE20['location'], NOW['location'])
+                             global2local(BEFORE10['location'], M),global2local(BEFORE5['location'], M),
+                             global2local(NOW['location'], M),global2local(FUTURE5['location'], M),
+                             global2local(FUTURE10['location'], M),global2local(FUTURE20['location'], M)
                              ]
-        trajectory_direction = [BEFORE10['velocity'],BEFORE5['velocity'],NOW['velocity'],FUTURE5['velocity'],FUTURE10['velocity'],FUTURE20['velocity']]
+        trajectory_direction = [global2local(BEFORE10['velocity'], M), global2local(BEFORE5['velocity'], M), global2local(NOW['velocity'], M), global2local(FUTURE5['velocity'],M), global2local(FUTURE10['velocity'], M), global2local(FUTURE20['velocity'], M)]
 
         new_feature = Feature(root_speed, Rfoot_location, Rfoot_speed, Lfoot_location, Lfoot_speed, trajectory_location, trajectory_direction, ANIM_INFO['index'])
 

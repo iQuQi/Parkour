@@ -32,7 +32,7 @@ class Feature:
         self.rootSpeed = root_speed
 
         # 루트의 미래+과거 궤적(바닥에 투영된 2D)   ====> 과거 -> 현재 -> 미래 (4개)
-        self.trajectoryLocation = trajectory_location # [-10, -5, 0, 5, 10, 20]
+        self.trajectoryLocation = trajectory_location # [-10, -5, 0, 5, 10, 20] ,[[xyz],[],[]] => [x y z x y z x y z]
         self.trajectoryDirection = trajectory_direction # 각 지점에서의 순간 방향
 
         self.footLocation = {'left': Lfoot_location, 'right': Rfoot_location}

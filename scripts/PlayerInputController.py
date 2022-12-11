@@ -94,7 +94,7 @@ class ModalOperator(bpy.types.Operator):
         if np.linalg.norm(input_direction) > 0: 
             normalized_input_direction = input_direction/np.linalg.norm(input_direction)
             queryVector = self.createQueryVector(normalized_input_direction)
-            queryVector.toString()
+            #queryVector.toString()
             self.motionMatcher.updateMatchedMotion(queryVector, self.KEY_MAP[CROUCH], self.KEY_MAP[JUMP])
         else:
             self.motionMatcher.time = UPDATE_TIME
@@ -112,9 +112,11 @@ class ModalOperator(bpy.types.Operator):
         LfootSpeed=np.linalg.norm(boneStructs['mixamorig2:LeftFoot']['velocity'])  
         
         # 궤도 특징 채우기 => 지수 함수 생성으로 예측
-        self.nowLocation = np.array(bpy.context.object.location)
+        obj = bpy.context.object
+        bone_struct = obj.pose.bones
+        self.nowLocation = np.array(bone_struct['mixamorig2:Hips'].location)
         self.nowVelocity = rootSpeed
-        self.esiredLocation = self.nowLocation + normalized_input_direction
+        self.desiredLocation = self.nowLocation + normalized_input_direction
 
         BEFORE10 = self.calculateFutureTrajectory(-10)
         BEFORE5 = self.calculateFutureTrajectory(-5)
@@ -123,17 +125,24 @@ class ModalOperator(bpy.types.Operator):
         FUTURE10 = self.calculateFutureTrajectory(10)
         FUTURE20 = self.calculateFutureTrajectory(20)
 
+        predict = [self.nowLocation+BEFORE10, self.nowLocation+BEFORE5, self.nowLocation+NOW, self.nowLocation+FUTURE5, self.nowLocation+FUTURE10, self.nowLocation+FUTURE20]
+
         beforeDirection = [self.calculateFutureTrajectory(-11), self.calculateFutureTrajectory(-6),
                         self.calculateFutureTrajectory(-1), self.calculateFutureTrajectory(4),
                         self.calculateFutureTrajectory(9), self.calculateFutureTrajectory(19) ]
 
-        trajectoryLocation =[BEFORE10 - self.nowLocation, BEFORE5 - self.nowLocation, NOW - self.nowLocation,
-                            FUTURE5 - self.nowLocation, FUTURE10 - self.nowLocation, FUTURE20 - self.nowLocation]
-        trajectoryDirection = [BEFORE10-beforeDirection[0],BEFORE5-beforeDirection[1],NOW-beforeDirection[2],
-                                FUTURE5-beforeDirection[3],FUTURE10-beforeDirection[4],FUTURE20-beforeDirection[5]]
+        for point in predict:
+            print('궤적 예측 포인트 출력:', point)
+            #bpy.ops.mesh.primitive_circle_add( radius=0.1, location = point )
 
-        return QueryVector(rootSpeed, RfootLocation, RfootSpeed, LfootLocation, LfootSpeed, 
-                            trajectoryLocation, trajectoryDirection)
+        trajectoryLocation = [*(BEFORE10 - self.nowLocation) , *(BEFORE5 - self.nowLocation) , *(NOW - self.nowLocation) , *(FUTURE5 - self.nowLocation) , *(FUTURE10 - self.nowLocation) ,  *(FUTURE20 - self.nowLocation)]
+        trajectoryDirection = [*(BEFORE10-beforeDirection[0]) , *(BEFORE5-beforeDirection[1]) , *(NOW-beforeDirection[2]) , *(FUTURE5-beforeDirection[3]) , *(FUTURE10-beforeDirection[4]) , *(FUTURE20-beforeDirection[5])]
+
+
+        #queryVector = QueryVector(rootSpeed, RfootLocation, RfootSpeed, LfootLocation, LfootSpeed, 
+        #                     trajectoryLocation, trajectoryDirection)
+
+        return [rootSpeed,LfootSpeed, RfootSpeed] + LfootLocation + RfootLocation + trajectoryLocation + trajectoryDirection
 
     def calculateFutureTrajectory(self,timeDelta):
         omega = 2/self.smoothTime

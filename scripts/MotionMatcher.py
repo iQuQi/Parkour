@@ -34,12 +34,19 @@ class MotionMatcher:
         # 트리 생성해주기
         point_list = []
         for feature in features:
-            point = [feature['rootSpeed'],feature['trajectoryLocation'],feature['trajectoryDirection'],
-                        feature['footLocation']['left'],feature['footLocation']['right'],
-                        feature['footSpeed']['left'], feature['footSpeed']['right']]
+            point = [
+                        feature['rootSpeed'],feature['footSpeed']['left'], feature['footSpeed']['right']
+                        ] + feature['footLocation']['left'] + feature['footLocation']['right'] 
+            
+            for location in feature['trajectoryLocation']:
+                point += location
+            for direction in feature['trajectoryDirection']:
+                point += direction
+
             point_list.append(point)
         
-        print('-----[트리 생성]------', point_list)
+            print('-----[트리 생성]------', point)
+       # [([speed], [], [], []), (speed, [location]), ()]
         self.tree = spatial.KDTree(point_list)
 
 
@@ -53,7 +60,7 @@ class MotionMatcher:
         return poses[self.matched_frame_index]['joints']
 
     def updateMatchedMotion(self, query, crouch, jump):
-        print('Function CALL - UpdateMatchedMotion:   ',self.time, len(poses))
+        print('Function CALL - UpdateMatchedMotion:   ', query)
         obj = bpy.context.object
         bone_struct = obj.pose.bones
         joint_names = bone_struct.keys()
@@ -61,11 +68,11 @@ class MotionMatcher:
         # 매칭 프레임 찾기
         if self.time == UPDATE_TIME:
             # 쿼리벡터 넣어주기
-            #distance, findIndex = self.tree.query(query)
-            #print('KD tree 테스트 코드!!! ---',distance, findIndex)
+            distance, findIndex = self.tree.query(query)
+            print('KD tree 테스트 코드!!! ---',distance, findIndex)
 
-            self.matched_frame_index = random.randint(1,1900)
-            #self.matched_frame_index = findIndex
+            #self.matched_frame_index = random.randint(1,1900)
+            self.matched_frame_index = findIndex
         else: 
             self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
         print('CHANGE FRAME TO => ',self.matched_frame_index )

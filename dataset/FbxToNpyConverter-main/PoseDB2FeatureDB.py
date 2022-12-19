@@ -91,13 +91,13 @@ def poseDB2featureDB():
  
 
         # 포즈 특징 채워주기
-        root_speed = np.linalg.norm(FRAME[HIP_KEY]['velocity']) 
+        root_velocity = FRAME[HIP_KEY]['velocity'] 
 
         Rfoot_location = FRAME['mixamorig2:RightFoot']['location']
-        Rfoot_speed = np.linalg.norm(FRAME['mixamorig2:RightFoot']['velocity'])  
+        Rfoot_velocity = FRAME['mixamorig2:RightFoot']['velocity']
 
         Lfoot_location = FRAME['mixamorig2:LeftFoot']['location']
-        Lfoot_speed = np.linalg.norm(FRAME['mixamorig2:LeftFoot']['velocity']) 
+        Lfoot_velocity = FRAME['mixamorig2:LeftFoot']['velocity']
 
 
         # 궤적 특징 채워주기
@@ -110,6 +110,7 @@ def poseDB2featureDB():
 
 
         z_w = frames[i+1]['joints'][HIP_KEY]['velocity'] # z_w
+        z_w = z_w/np.linalg.norm(z_w)
         print(z_w)
         x_u = np.cross([0,0,1], z_w)
         x_u = x_u/np.linalg.norm(x_u)
@@ -127,7 +128,8 @@ def poseDB2featureDB():
                              ]
         trajectory_direction = [global2local(BEFORE10['velocity'], M), global2local(BEFORE5['velocity'], M), global2local(NOW['velocity'], M), global2local(FUTURE5['velocity'],M), global2local(FUTURE10['velocity'], M), global2local(FUTURE20['velocity'], M)]
 
-        new_feature = Feature(root_speed, Rfoot_location, Rfoot_speed, Lfoot_location, Lfoot_speed, trajectory_location, trajectory_direction, ANIM_INFO['index'])
+        new_feature = Feature(global2local(root_velocity,M), Rfoot_location, Rfoot_velocity, Lfoot_location, 
+                        Lfoot_velocity, trajectory_location, trajectory_direction, ANIM_INFO['index'])
 
         # 각 파일에 들어갈 피쳐 배열에 추가
         features_npy.append(np.array(new_feature.__dict__))

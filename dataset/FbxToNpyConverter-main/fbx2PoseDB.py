@@ -112,7 +112,7 @@ def fbx2PoseDB():
                     
             
             for name in joint_names:
-                local_location = bone_struct[name].matrix_basis
+                local_location = bone_struct[name].matrix_basis @ Vector((0,0,0))
                 local_rotation = bone_struct[name].rotation_quaternion
 
                 location = [local_location[X], local_location[Y], local_location[Z]]

@@ -20,7 +20,6 @@ with open(pose_path, 'r') as f: poses = json.load(f)
 feature_path = upper_dir_path + '/dataset/FeatureDB.json'
 with open(feature_path, 'r') as f: features = json.load(f)
 
-
 class MotionMatcher:
     motion = ''
     time = UPDATE_TIME
@@ -34,9 +33,7 @@ class MotionMatcher:
         # 트리 생성해주기
         point_list = []
         for feature in features:
-            point = [
-                        feature['rootSpeed'],feature['footSpeed']['left'], feature['footSpeed']['right']
-                        ] + feature['footLocation']['left'] + feature['footLocation']['right'] 
+            point = feature['rootSpeed']+feature['footSpeed']['left']+ feature['footSpeed']['right']+ feature['footLocation']['left'] + feature['footLocation']['right'] 
             
             for location in feature['trajectoryLocation']:
                 point += location
@@ -45,7 +42,7 @@ class MotionMatcher:
 
             point_list.append(point)
         
-            print('-----[트리 생성]------', point)
+           #print('-----[트리 생성]------', point)
        # [([speed], [], [], []), (speed, [location]), ()]
         self.tree = spatial.KDTree(point_list)
 
@@ -69,13 +66,13 @@ class MotionMatcher:
         if self.time == UPDATE_TIME:
             # 쿼리벡터 넣어주기
             distance, findIndex = self.tree.query(query)
-            print('KD tree 테스트 코드!!! ---',distance, findIndex)
+            #print('KD tree 테스트 코드!!! ---',distance, findIndex)
 
             #self.matched_frame_index = random.randint(1,1900)
             self.matched_frame_index = findIndex
         else: 
             self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
-        print('CHANGE FRAME TO => ',self.matched_frame_index )
+        #print('CHANGE FRAME TO => ',self.matched_frame_index )
 
         # 해당하는 프레임으로 애니메이션 교체 & 재생 
         for joint in joint_names:
@@ -98,8 +95,22 @@ class MotionMatcher:
                 self.prevRootLocation = bone_struct[joint].location.copy()
 
             # 나머지 조인트 위치정보 업데이트
-            else: bone_struct[joint].location = jointLocation
+            else: 
+                bone_struct[joint].location = jointLocation
 
+        # bpy.context.scene.transform_orientation_slots[0].type = 'LOCAL'
+
+        print('출력 축!!:',bone_struct['mixamorig2:Hips'].x_axis,bone_struct['mixamorig2:Hips'].y_axis,bone_struct['mixamorig2:Hips'].z_axis)
+        # bpy.data.objects['Cone'].location = bone_struct['mixamorig2:Hips'].x_axis
+        # bpy.data.objects['Cylinder'].location = (-1)*bone_struct['mixamorig2:Hips'].z_axis
+        # bpy.data.objects['Cube'].location = bone_struct['mixamorig2:Hips'].y_axis
+
+        # print('매트릭스 LOCAL:',bone_struct['mixamorig2:Hips'].matrix_local)
+
+        bpy.data.objects['Cone'].location = bone_struct['mixamorig2:Hips'].x_axis
+        bpy.data.objects['Cylinder'].location = bone_struct['mixamorig2:Hips'].y_axis
+        bpy.data.objects['Cube'].location = bone_struct['mixamorig2:Hips'].z_axis
+        # 궤도 특징 채우기 => 지수 함수 생성으로 예측
         
         # 시간 업데이트
         self.time = (self.time + 1) % (UPDATE_TIME + 1)

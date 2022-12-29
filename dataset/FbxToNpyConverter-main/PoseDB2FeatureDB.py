@@ -86,9 +86,10 @@ def poseDB2featureDB():
             now_start_index = ANIM_INFO['start']
             now_end_index =  ANIM_INFO['end']
 
-        if i < (now_start_index + 10) or i > (now_end_index - 20):
-            continue
- 
+        # if i < (now_start_index + 10) or i > (now_end_index - 20):
+        #     continue
+        if i < (now_start_index) or i > (now_end_index - 20):
+             continue
 
         # 포즈 특징 채워주기
         root_velocity = FRAME[HIP_KEY]['velocity'] 
@@ -101,11 +102,12 @@ def poseDB2featureDB():
 
 
         # 궤적 특징 채워주기
-        BEFORE10 = frames[i-10]['joints'][HIP_KEY]
-        BEFORE5 = frames[i-5]['joints'][HIP_KEY]
+       
         NOW = frames[i]['joints'][HIP_KEY]
-        FUTURE5 = frames[i+5]['joints'][HIP_KEY]
-        FUTURE10 = frames[i+10]['joints'][HIP_KEY]
+        FUTURE4 = frames[i+4]['joints'][HIP_KEY]
+        FUTURE8 = frames[i+8]['joints'][HIP_KEY]
+        FUTURE12 = frames[i+12]['joints'][HIP_KEY]
+        FUTURE16 = frames[i+16]['joints'][HIP_KEY]
         FUTURE20 = frames[i+20]['joints'][HIP_KEY]
 
 
@@ -121,11 +123,13 @@ def poseDB2featureDB():
 
         M = np.linalg.inv(M)
         trajectory_location =[
-                             global2local(BEFORE10['location'], M),global2local(BEFORE5['location'], M),
-                             global2local(NOW['location'], M),global2local(FUTURE5['location'], M),
-                             global2local(FUTURE10['location'], M),global2local(FUTURE20['location'], M)
+                             global2local(NOW['location'], M),global2local(FUTURE4['location'], M),
+                             global2local(FUTURE8['location'], M),global2local(FUTURE12['location'], M),
+                             global2local(FUTURE16['location'], M),global2local(FUTURE20['location'], M)
                              ]
-        trajectory_direction = [global2local(BEFORE10['velocity'], M), global2local(BEFORE5['velocity'], M), global2local(NOW['velocity'], M), global2local(FUTURE5['velocity'],M), global2local(FUTURE10['velocity'], M), global2local(FUTURE20['velocity'], M)]
+        trajectory_direction = [global2local(NOW['velocity'], M), global2local(FUTURE4['velocity'], M), 
+                                global2local(FUTURE8['velocity'], M), global2local(FUTURE12['velocity'],M), 
+                                global2local(FUTURE16['velocity'], M), global2local(FUTURE20['velocity'], M)]
 
         new_feature = Feature(global2local(root_velocity,M), Rfoot_location, Rfoot_velocity, Lfoot_location, 
                         Lfoot_velocity, trajectory_location, trajectory_direction, ANIM_INFO['index'])

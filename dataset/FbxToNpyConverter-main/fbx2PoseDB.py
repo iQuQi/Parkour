@@ -121,8 +121,8 @@ def fbx2PoseDB():
                     velocity=[0,0,0]
                     angular_velocity=[0,0,0,0]
                 else:
-                    velocity = [(prev_location[name][X]-local_location[X])*30,(prev_location[name][Y]-local_location[Y])*30, (prev_location[name][Z]-local_location[Z])*30]
-                    angular_velocity = [(prev_rotation[name].w-local_rotation.w)*30,(prev_rotation[name].x-local_rotation.x)*30,(prev_rotation[name].y-local_rotation.y)*30, (prev_rotation[name].z-local_rotation.z)*30]
+                    velocity = [(local_location[X]-prev_location[name][X])*30,(local_location[Y]-prev_location[name][Y])*30, (local_location[Z]-prev_location[name][Z])*30]
+                    angular_velocity = [(local_rotation.w-prev_rotation[name].w)*30,(local_rotation.x-prev_rotation[name].x)*30,(local_rotation.y-prev_rotation[name].y)*30, (local_rotation.z-prev_rotation[name].z)*30]
                 
                 
                 if(i!=0):

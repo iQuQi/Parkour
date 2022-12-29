@@ -25,7 +25,9 @@ class MotionMatcher:
     time = UPDATE_TIME
     matched_frame_index = -1
     prevRootLocation = [0,0,0]
-    updateDiff = [0,0,0]
+    prevRootRotation = [0,0,0,0]
+    rotationDiff = [0,0,0,0]
+    locationDiff = [0,0,0]
     tree = ''
      
     def __init__(self):
@@ -33,11 +35,12 @@ class MotionMatcher:
         # 트리 생성해주기
         point_list = []
         for feature in features:
-            point = feature['rootSpeed'].copy()
+            #point = feature['rootSpeed'].copy()
+            point = []
             for location in feature['trajectoryLocation']:
                 point += location
-            for direction in feature['trajectoryDirection']:
-                point += direction
+            # for direction in feature['trajectoryDirection']:
+            #     point += direction
 
 
             point_list.append(point)
@@ -67,50 +70,47 @@ class MotionMatcher:
             # 쿼리벡터 넣어주기
             distance, findIndex = self.tree.query(query)
             print('쿼리...',query)
-            #print('KD tree 테스트 코드!!! ---',distance, findIndex)
 
-            #self.matched_frame_index = random.randint(1,1900)
-            self.matched_frame_index = findIndex
+            self.matched_frame_index = random.randint(1,1900)
+            #self.matched_frame_index = findIndex
         else: 
             self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
-        #print('CHANGE FRAME TO => ',self.matched_frame_index )
 
+        #  피쳐의 궤적 출력
+        print('매칭된 인덱스', self.matched_frame_index)
         for index, point in enumerate(features[self.matched_frame_index]['trajectoryLocation']):
-            print('궤적 예측 포인트 출력:', point)
-            bpy.data.objects['Feature'+ str(index+1)].location = point
+            bpy.data.objects['Feature'+ str(index+1)].location = local2global([point[0]/100,point[1]/100,point[2]/100])
 
         # 해당하는 프레임으로 애니메이션 교체 & 재생 
         for joint in joint_names:
             # 조인트 회전 정보 업데이트
-            bone_struct[joint].rotation_quaternion = poses[self.matched_frame_index]['joints'][joint]['rotation']
-
+            jointRotation = poses[self.matched_frame_index]['joints'][joint]['rotation']
             jointLocation = poses[self.matched_frame_index]['joints'][joint]['location']
             # 힙 조인트 위치정보 업데이트                
             if joint == 'mixamorig2:Hips': 
-
-                if self.time == UPDATE_TIME:
-                    self.updateDiff = substractArray3(self.prevRootLocation,jointLocation)
-                elif np.linalg.norm(substractArray3(addArray3(jointLocation, self.updateDiff),self.prevRootLocation)) > 100:
-                    print('[임시로 예외처리]:',np.linalg.norm(substractArray3(addArray3(jointLocation, self.updateDiff),self.prevRootLocation)))
-                    self.updateDiff = substractArray3(self.prevRootLocation,jointLocation)
+                exceptionCheck = np.linalg.norm(substractArray3(addArray3(jointLocation, self.locationDiff),self.prevRootLocation)) > 100
+                if self.time == UPDATE_TIME or (self.time != UPDATE_TIME  and  exceptionCheck):
+                    self.locationDiff = substractArray3(self.prevRootLocation,jointLocation)
+                    self.rotationDiff = substractArray4(self.prevRootRotation,jointRotation)
                 
-                # 위치 보정
-                bone_struct[joint].location = addArray3(jointLocation, self.updateDiff)
-                # 현재 힙 위치 저장해두기
+                # 보정
+                bone_struct[joint].location = addArray3(jointLocation, self.locationDiff)
+                #bone_struct[joint].rotation_quaternion = addArray4(jointRotation, self.rotationDiff)
+                bone_struct[joint].rotation_quaternion = jointRotation
+                # 현재 힙 정보 저장해두기
                 self.prevRootLocation = bone_struct[joint].location.copy()
-
+                self.prevRootRotation = bone_struct[joint].rotation_quaternion.copy()
             # 나머지 조인트 위치정보 업데이트
             else: 
-                bone_struct[joint].location = jointLocation
+                bone_struct[joint].location = jointLocation            
+                bone_struct[joint].rotation_quaternion = jointRotation
 
-        # bpy.context.scene.transform_orientation_slots[0].type = 'LOCAL'
 
-        print('출력 축!!:',bone_struct['mixamorig2:Hips'].x_axis,bone_struct['mixamorig2:Hips'].y_axis,bone_struct['mixamorig2:Hips'].z_axis)
-        # bpy.data.objects['Cone'].location = bone_struct['mixamorig2:Hips'].x_axis
-        # bpy.data.objects['Cylinder'].location = (-1)*bone_struct['mixamorig2:Hips'].z_axis
-        # bpy.data.objects['Cube'].location = bone_struct['mixamorig2:Hips'].y_axis
 
-        # print('매트릭스 LOCAL:',bone_struct['mixamorig2:Hips'].matrix_local)
+        # bpy.data.objects['Cone'].location = [bone_struct['mixamorig2:Hips'].matrix[0][0],(-1)*bone_struct['mixamorig2:Hips'].matrix[2][0],bone_struct['mixamorig2:Hips'].matrix[1][0]]
+        # bpy.data.objects['Cylinder'].location =  [bone_struct['mixamorig2:Hips'].matrix[0][1],(-1)*bone_struct['mixamorig2:Hips'].matrix[2][1],bone_struct['mixamorig2:Hips'].matrix[1][1]]
+        # bpy.data.objects['Cube'].location =  [bone_struct['mixamorig2:Hips'].matrix[0][2],(-1)*bone_struct['mixamorig2:Hips'].matrix[2][2],bone_struct['mixamorig2:Hips'].matrix[1][2]]
+
 
 
         # 궤도 특징 채우기 => 지수 함수 생성으로 예측

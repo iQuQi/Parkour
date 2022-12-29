@@ -33,16 +33,16 @@ class MotionMatcher:
         # 트리 생성해주기
         point_list = []
         for feature in features:
-            point = feature['rootSpeed']+feature['footSpeed']['left']+ feature['footSpeed']['right']+ feature['footLocation']['left'] + feature['footLocation']['right'] 
-            
+            point = feature['rootSpeed'].copy()
             for location in feature['trajectoryLocation']:
                 point += location
             for direction in feature['trajectoryDirection']:
                 point += direction
 
+
             point_list.append(point)
         
-           #print('-----[트리 생성]------', point)
+           
        # [([speed], [], [], []), (speed, [location]), ()]
         self.tree = spatial.KDTree(point_list)
 
@@ -66,6 +66,7 @@ class MotionMatcher:
         if self.time == UPDATE_TIME:
             # 쿼리벡터 넣어주기
             distance, findIndex = self.tree.query(query)
+            print('쿼리...',query)
             #print('KD tree 테스트 코드!!! ---',distance, findIndex)
 
             #self.matched_frame_index = random.randint(1,1900)
@@ -73,6 +74,10 @@ class MotionMatcher:
         else: 
             self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
         #print('CHANGE FRAME TO => ',self.matched_frame_index )
+
+        for index, point in enumerate(features[self.matched_frame_index]['trajectoryLocation']):
+            print('궤적 예측 포인트 출력:', point)
+            bpy.data.objects['Feature'+ str(index+1)].location = point
 
         # 해당하는 프레임으로 애니메이션 교체 & 재생 
         for joint in joint_names:
@@ -107,9 +112,7 @@ class MotionMatcher:
 
         # print('매트릭스 LOCAL:',bone_struct['mixamorig2:Hips'].matrix_local)
 
-        bpy.data.objects['Cone'].location = bone_struct['mixamorig2:Hips'].x_axis
-        bpy.data.objects['Cylinder'].location = bone_struct['mixamorig2:Hips'].y_axis
-        bpy.data.objects['Cube'].location = bone_struct['mixamorig2:Hips'].z_axis
+
         # 궤도 특징 채우기 => 지수 함수 생성으로 예측
         
         # 시간 업데이트

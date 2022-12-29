@@ -109,15 +109,14 @@ def poseDB2featureDB():
         FUTURE20 = frames[i+20]['joints'][HIP_KEY]
 
 
-        z_w = frames[i+1]['joints'][HIP_KEY]['velocity'] # z_w
+        z_w = frames[i]['joints'][HIP_KEY]['velocity'] # z_w
         z_w = z_w/np.linalg.norm(z_w)
-        print(z_w)
         x_u = np.cross([0,0,1], z_w)
         x_u = x_u/np.linalg.norm(x_u)
         y_v = np.cross(z_w, x_u)
-        M = [[x_u[0], z_w[0], y_v[0], NOW['location'][0]],
-            [x_u[1], z_w[1], y_v[1], NOW['location'][1]],
-            [x_u[2], z_w[2], y_v[2], NOW['location'][2]],
+        M = [[x_u[0], y_v[0], z_w[0], NOW['location'][0]],
+            [x_u[1], y_v[1], z_w[1],  NOW['location'][1]],
+            [x_u[2],  y_v[2], z_w[2], NOW['location'][2]],
             [0, 0, 0, 1]]
 
         M = np.linalg.inv(M)

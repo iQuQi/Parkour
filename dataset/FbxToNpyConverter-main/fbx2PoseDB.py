@@ -148,7 +148,7 @@ def fbx2PoseDB():
             with open(save_path,'w') as f:
                 json.dump(out_dict_list[i], f)
 
-        combined_out_dict_list.extend(out_dict_list[:-1])
+        combined_out_dict_list.extend(out_dict_list)
 
     # json 파일 생성
     save_path = os.path.join(COMBINED_FILE_PATH,'PoseDB.json')

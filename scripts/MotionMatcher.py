@@ -8,6 +8,7 @@ import json
 import random
 from utils.common import *
 from scipy import spatial 
+import mathutils
 
 #Combined Files Path
 COMBINED_FILE_PATH = os.path.abspath('dataSet.npy')
@@ -29,6 +30,7 @@ class MotionMatcher:
     rotationDiff = [0,0,0,0]
     locationDiff = [0,0,0]
     tree = ''
+    featureIndex = 0
      
     def __init__(self):
         self.motion = 'idle'
@@ -71,32 +73,39 @@ class MotionMatcher:
             distance, findIndex = self.tree.query(query)
             print('쿼리...',query)
 
-            self.matched_frame_index = random.randint(1,1900)
-            #self.matched_frame_index = findIndex
+            # self.matched_frame_index = random.randint(1,728)
+            self.matched_frame_index = features[findIndex]['poseIndex']
+            self.featureIndex = findIndex
         else: 
             self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
 
         #  피쳐의 궤적 출력
         print('매칭된 인덱스', self.matched_frame_index)
-        for index, point in enumerate(features[self.matched_frame_index]['trajectoryLocation']):
+        for index, point in enumerate(features[self.featureIndex]['trajectoryLocation']):
             bpy.data.objects['Feature'+ str(index+1)].location = local2global([point[0]/100,point[1]/100,point[2]/100])
 
+        print('애니메이션 이름 : ', poses[self.matched_frame_index]['animInfo'][0]['name'])
         # 해당하는 프레임으로 애니메이션 교체 & 재생 
         for joint in joint_names:
             # 조인트 회전 정보 업데이트
-            jointRotation = poses[self.matched_frame_index]['joints'][joint]['rotation']
+            jointRotation = mathutils.Quaternion(poses[self.matched_frame_index]['joints'][joint]['rotation'])
             jointLocation = poses[self.matched_frame_index]['joints'][joint]['location']
             # 힙 조인트 위치정보 업데이트                
             if joint == 'mixamorig2:Hips': 
                 exceptionCheck = np.linalg.norm(substractArray3(addArray3(jointLocation, self.locationDiff),self.prevRootLocation)) > 100
                 if self.time == UPDATE_TIME or (self.time != UPDATE_TIME  and  exceptionCheck):
                     self.locationDiff = substractArray3(self.prevRootLocation,jointLocation)
-                    self.rotationDiff = substractArray4(self.prevRootRotation,jointRotation)
-                
+                    self.rotationDiff = mathutils.Quaternion(self.prevRootRotation).rotation_difference(jointRotation)
+                    print('rotationDiff 출력', self.rotationDiff.to_euler())
                 # 보정
                 bone_struct[joint].location = addArray3(jointLocation, self.locationDiff)
-                #bone_struct[joint].rotation_quaternion = addArray4(jointRotation, self.rotationDiff)
-                bone_struct[joint].rotation_quaternion = jointRotation
+                # bone_struct[joint].rotation_quaternion = jointRotation 
+                if np.isnan(self.rotationDiff.w):
+                    bone_struct[joint].rotation_quaternion = jointRotation 
+                else:
+                    bone_struct[joint].rotation_quaternion = jointRotation * self.rotationDiff
+                
+                # bone_struct[joint].rotation_quaternion.rotate(self.rotationDiff)
                 # 현재 힙 정보 저장해두기
                 self.prevRootLocation = bone_struct[joint].location.copy()
                 self.prevRootRotation = bone_struct[joint].rotation_quaternion.copy()

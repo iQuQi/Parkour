@@ -84,17 +84,17 @@ class ModalOperator(bpy.types.Operator):
         # 여기를 local 기준으로 바꾸고, Y = -Z
         # 그걸 다시 global 기준으로 바꿔서 query 생성에 넘기기
         if self.KEY_MAP['UP_ARROW']:
-            input_direction[Z] += 3
+            input_direction[Z] += 1
         if self.KEY_MAP['DOWN_ARROW']:
-            input_direction[Z] += (-3) 
+            input_direction[Z] += (-1) 
         if self.KEY_MAP['LEFT_ARROW']:
-            input_direction[X] += 3
+            input_direction[X] += 1
         if self.KEY_MAP['RIGHT_ARROW']:
-            input_direction[X] += (-3) 
+            input_direction[X] += (-1) 
         if self.KEY_MAP[JUMP]:
-            input_direction[Y] += 3
+            input_direction[Y] += 1
         if self.KEY_MAP[CROUCH]:
-            input_direction[Y] += (-3) 
+            input_direction[Y] += (-1) 
 
         print('입력!!---', input_direction)
         
@@ -138,7 +138,7 @@ class ModalOperator(bpy.types.Operator):
         trajectoryLocation = []
         trajectoryDirection = []
         for index in range(12):
-            updatePosition =  self.calculateFutureTrajectory(0.1)
+            updatePosition =  self.calculateFutureTrajectory(0.133)
             if index % 2 != 0: 
                 printPoint.append(local2global(updatePosition.tolist()))
                 trajectoryLocation.extend(updatePosition)

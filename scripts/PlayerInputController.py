@@ -138,7 +138,7 @@ class ModalOperator(bpy.types.Operator):
         trajectoryLocation = []
         trajectoryDirection = []
         for index in range(12):
-            updatePosition =  self.calculateFutureTrajectory(0.133)
+            updatePosition =  self.calculateFutureTrajectory(0.07)
             if index % 2 != 0: 
                 printPoint.append(local2global(updatePosition.tolist()))
                 trajectoryLocation.extend(updatePosition)
@@ -152,7 +152,7 @@ class ModalOperator(bpy.types.Operator):
 
         #return rootVelocity + LfootVelocity + RfootVelocity + LfootLocation + RfootLocation + trajectoryLocation + trajectoryDirection
 
-        return trajectoryLocation
+        return LfootLocation + RfootLocation + trajectoryLocation
 
     def calculateFutureTrajectory(self,timeDelta):
         omega = 2.0/self.smoothTime

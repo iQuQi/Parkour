@@ -38,9 +38,12 @@ class MotionMatcher:
         point_list = []
         for feature in features:
             #point = feature['rootSpeed'].copy()
-            point = []
+            # point = []
+            point = feature['footLocation']['left'] + feature['footLocation']['right'] # foot 추가
+
             for location in feature['trajectoryLocation']:
                 point += location
+
             # for direction in feature['trajectoryDirection']:
             #     point += direction
 

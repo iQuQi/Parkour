@@ -1,4 +1,6 @@
 import numpy as np 
+from scipy.spatial import distance
+
 VECTOR3 = [0,0,0]
 KEY_CODE = {'Z': 6,'X': 7, 'C': 8,'V': 9, 'SPACE': 49, 'LEFT': 123, 'RIGHT': 124, 'DOWN' : 125, 'UP': 126}
 X = 0
@@ -48,3 +50,12 @@ def updateM(globalLocation, axes):
         [x_u[1], y_v[1], z_w[1], globalLocation[1]],
         [x_u[2], y_v[2], z_w[2],  globalLocation[2]],
         [0, 0, 0, 1]])
+
+def calculateDistance(feature, query):
+    total = 0
+    # print('피쳐의 trajectory 출력 : ', feature)
+    # print('쿼리 벡터 출력 : ', query)
+    for i in range(len(feature)):
+        total += distance.euclidean([feature[i][0]/100,feature[i][1]/100,feature[i][2]/100], query[i])
+        print('각 차이 : idx = ', i, distance.euclidean(feature[i], query[i]))
+    return total

@@ -35,24 +35,25 @@ class MotionMatcher:
     def __init__(self):
         self.motion = 'idle'
         # 트리 생성해주기
-        point_list = []
-        for feature in features:
-            #point = feature['rootSpeed'].copy()
-            point = []
-            # point = feature['footLocation']['left'] + feature['footLocation']['right'] # foot 추가
+        # point_list = []
+        # for feature in features:
+        #     #point = feature['rootSpeed'].copy()
+        #     point = []
+        #     # point = feature['footLocation']['left'] + feature['footLocation']['right'] # foot 추가
 
-            for location in feature['trajectoryLocation']:
-                point += location
+        #     for location in feature['trajectoryLocation']:
+        #         point.append(location)
 
-            # for direction in feature['trajectoryDirection']:
-            #     point += direction
+        #     # for direction in feature['trajectoryDirection']:
+        #     #     point += direction
 
 
-            point_list.append(point)
+        #     point_list.append(point)
         
            
-       # [([speed], [], [], []), (speed, [location]), ()]
-        self.tree = spatial.KDTree(point_list)
+        # # [([speed], [], [], []), (speed, [location]), ()]
+        # print('point_list : ', point_list)
+        # self.tree = spatial.KDTree(point_list)
 
 
     def start():
@@ -73,13 +74,29 @@ class MotionMatcher:
         # 매칭 프레임 찾기
         if self.time == UPDATE_TIME:
             # 쿼리벡터 넣어주기
-            distance, findIndex = self.tree.query(query)
-            # print('쿼리...',query)
+            # distance, findIndex = self.tree.query(query)
+            # # print('쿼리...',query)
 
-            # self.matched_frame_index = random.randint(1,728)
-            # findIndex = 100
+            # # self.matched_frame_index = random.randint(1,728)
+            # findIndex = 10
+            # self.matched_frame_index = features[findIndex]['poseIndex']
+            # self.featureIndex = findIndex
+
+            # bruteforce
+            min = 2147483647
+            minIdx = -1
+            for idx, feature in enumerate(features):
+                res = calculateDistance(feature['trajectoryLocation'], query)
+                if res < min:
+                    min = res
+                    minIdx = idx
+                print(res, poses[features[idx]['poseIndex']]['animInfo'][0]['name'])
+            
+            findIndex = minIdx
             self.matched_frame_index = features[findIndex]['poseIndex']
             self.featureIndex = findIndex
+
+                
         else: 
             self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
 

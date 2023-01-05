@@ -118,7 +118,12 @@ class ModalOperator(bpy.types.Operator):
         speed = np.linalg.norm([poseDBVelocity[0]/100,poseDBVelocity[1]/100,poseDBVelocity[2]/100]) 
         if speed == 0: speed = ZERO_VELOCITY
         rootVelocity = np.array([bone_struct['mixamorig2:Hips'].z_axis[0]*speed,(-1*speed)*bone_struct['mixamorig2:Hips'].z_axis[2],speed*bone_struct['mixamorig2:Hips'].z_axis[1]])
-        updateM(rootVelocity, globalLocation)
+        axes = [
+            [bone_struct['mixamorig2:Hips'].x_axis[0], (-1)*bone_struct['mixamorig2:Hips'].x_axis[2], bone_struct['mixamorig2:Hips'].x_axis[1]],
+            [bone_struct['mixamorig2:Hips'].y_axis[0], (-1)*bone_struct['mixamorig2:Hips'].y_axis[2], bone_struct['mixamorig2:Hips'].y_axis[1]],
+            [bone_struct['mixamorig2:Hips'].z_axis[0], (-1)*bone_struct['mixamorig2:Hips'].z_axis[2], bone_struct['mixamorig2:Hips'].z_axis[1]]
+        ]
+        updateM(globalLocation, axes)
         rootVelocity = global2local(rootVelocity.tolist())
         print('루트 속도&글로벌 위치', speed,rootVelocity, globalLocation )
 
@@ -152,7 +157,8 @@ class ModalOperator(bpy.types.Operator):
 
         #return rootVelocity + LfootVelocity + RfootVelocity + LfootLocation + RfootLocation + trajectoryLocation + trajectoryDirection
 
-        return LfootLocation + RfootLocation + trajectoryLocation
+        # return LfootLocation + RfootLocation + trajectoryLocation
+        return trajectoryLocation
 
     def calculateFutureTrajectory(self,timeDelta):
         omega = 2.0/self.smoothTime

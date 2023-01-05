@@ -111,11 +111,10 @@ def poseDB2featureDB():
         FUTURE20 = frames[i+20]['joints'][HIP_KEY]
 
 
-        z_w = frames[i]['joints'][HIP_KEY]['velocity'] # z_w
-        z_w = z_w/np.linalg.norm(z_w)
-        x_u = np.cross([0,0,1], z_w)
-        x_u = x_u/np.linalg.norm(x_u)
-        y_v = np.cross(z_w, x_u)
+        # z_w = np.array([frames[i]['zAxis'][0], (-1)*frames[i]['zAxis'][2], frames[i]['zAxis'][1]]) # z_w
+        x_u = np.array(frames[i]['axes'][0])
+        y_v = np.array(frames[i]['axes'][1])
+        z_w = np.array(frames[i]['axes'][2]) # z_w
         M = [[x_u[0], y_v[0], z_w[0], NOW['location'][0]],
             [x_u[1], y_v[1], z_w[1],  NOW['location'][1]],
             [x_u[2],  y_v[2], z_w[2], NOW['location'][2]],
@@ -137,6 +136,7 @@ def poseDB2featureDB():
         # 각 파일에 들어갈 피쳐 배열에 추가
         features_npy.append(np.array(new_feature.__dict__))
         features_json.append(new_feature.__dict__)
+        print('featureIndex', len(features_json)-1)
 
     # npy, json 파일로 저장하기
     np.save(COMBINED_FILE_PATH + 'featureDB.npy', features_npy)

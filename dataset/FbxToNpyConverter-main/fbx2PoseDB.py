@@ -12,9 +12,9 @@ HOME_FILE_PATH = os.path.abspath('homefile.blend')
 MIN_NR_FRAMES = 64
 RESOLUTION = (512, 512)
 
-WRONG_PREFIX = ['mixamorig','mixamorig1','mixamorig3','mixamorig4','mixamorig5','mixamorig6',
-'mixamorig7','mixamorig8','mixamorig9','mixamorig10','mixamorig11','mixamorig12']
-CORRECT_PREFIX = 'mixamorig2'
+WRONG_PREFIX = ['mixamorig:','mixamorig1:','mixamorig3:','mixamorig4:','mixamorig5:','mixamorig6:',
+'mixamorig7:','mixamorig8:','mixamorig9:','mixamorig10:','mixamorig11:','mixamorig12:']
+CORRECT_PREFIX = 'mixamorig2:'
 
 X = 0
 Y = 1
@@ -108,34 +108,41 @@ def fbx2PoseDB():
             bone_struct = bpy.data.objects['Armature'].pose.bones
             joint_names = bone_struct.keys()
 
-            out_dict = {'joints': {}, 'animInfo': []}       
-                    
-            
+            out_dict = {'joints': {}, 'animInfo': [], 'zAxis': []}       
             for name in joint_names:
+                correct_name = name
+                for wrong in WRONG_PREFIX:
+                    if wrong in name:
+                        correct_name = name.replace(wrong, CORRECT_PREFIX)
+
                 local_location = bone_struct[name].matrix_basis @ Vector((0,0,0))
                 local_rotation = bone_struct[name].rotation_quaternion
 
                 location = [local_location[X], local_location[Y], local_location[Z]]
                 rotation = [local_rotation.w,local_rotation.x,local_rotation.y,local_rotation.z]
+
+                # 속도 구하기 위해
                 if(i==0):
                     velocity=[0,0,0]
                     angular_velocity=[0,0,0,0]
                 else:
                     velocity = [(local_location[X]-prev_location[name][X])*30,(local_location[Y]-prev_location[name][Y])*30, (local_location[Z]-prev_location[name][Z])*30]
                     angular_velocity = [(local_rotation.w-prev_rotation[name].w)*30,(local_rotation.x-prev_rotation[name].x)*30,(local_rotation.y-prev_rotation[name].y)*30, (local_rotation.z-prev_rotation[name].z)*30]
-                
-                
-                if(i!=0):
-                    if(out_dict_list[i-1]['joints'][name]==name):
-                        out_dict_list[i-1]['joints'][name]['angular_velocity'] = angular_velocity
-                        out_dict_list[i-1]['joints'][name]['velocity'] = velocity
+
+                    # i!=0 일 때 구한 속도 대입
+                    out_dict_list[i-1]['joints'][correct_name]['angular_velocity'] = angular_velocity
+                    out_dict_list[i-1]['joints'][correct_name]['velocity'] = velocity
 
 
+                # Hip의 local z축 정보
+                if name[-4:]=='Hips':
+                    out_dict['axes'] = np.array([bone_struct[name].x_axis, bone_struct[name].y_axis, bone_struct[name].z_axis]).tolist()
+                    
+                # 새로운 joint 추가
                 joint = Joint(location, rotation, angular_velocity, velocity)
-                for wrong in WRONG_PREFIX:
-                    out_dict['joints'][name.replace(wrong, CORRECT_PREFIX)] = joint.__dict__
+                out_dict['joints'][correct_name] = joint.__dict__
                 
-                prev_location[name] = location
+                prev_location[name] = location # name, correct_name 관련 없지만 일단 name으로 둠
                 prev_rotation[name] = local_rotation.copy()
             
             animInfo = AnimInfo(anim_name, index = global_index, start = start_index, end = end_index)

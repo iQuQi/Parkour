@@ -38,8 +38,8 @@ class MotionMatcher:
         point_list = []
         for feature in features:
             #point = feature['rootSpeed'].copy()
-            # point = []
-            point = feature['footLocation']['left'] + feature['footLocation']['right'] # foot 추가
+            point = []
+            # point = feature['footLocation']['left'] + feature['footLocation']['right'] # foot 추가
 
             for location in feature['trajectoryLocation']:
                 point += location
@@ -74,9 +74,10 @@ class MotionMatcher:
         if self.time == UPDATE_TIME:
             # 쿼리벡터 넣어주기
             distance, findIndex = self.tree.query(query)
-            print('쿼리...',query)
+            # print('쿼리...',query)
 
             # self.matched_frame_index = random.randint(1,728)
+            # findIndex = 100
             self.matched_frame_index = features[findIndex]['poseIndex']
             self.featureIndex = findIndex
         else: 
@@ -106,7 +107,8 @@ class MotionMatcher:
                 if np.isnan(self.rotationDiff.w):
                     bone_struct[joint].rotation_quaternion = jointRotation 
                 else:
-                    bone_struct[joint].rotation_quaternion = jointRotation * self.rotationDiff
+                    print('회전 확인', (jointRotation * self.rotationDiff).to_euler())
+                    bone_struct[joint].rotation_quaternion = self.rotationDiff * jointRotation
                 
                 # bone_struct[joint].rotation_quaternion.rotate(self.rotationDiff)
                 # 현재 힙 정보 저장해두기

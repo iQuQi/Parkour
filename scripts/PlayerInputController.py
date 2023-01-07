@@ -146,7 +146,7 @@ class ModalOperator(bpy.types.Operator):
             updatePosition =  self.calculateFutureTrajectory(0.07)
             if index % 2 != 0: 
                 printPoint.append(local2global(updatePosition.tolist()))
-                trajectoryLocation.append(updatePosition)
+                trajectoryLocation.extend(updatePosition)
                 trajectoryDirection.extend(substractArray3(updatePosition,self.nowLocation))
             self.nowLocation = updatePosition
 

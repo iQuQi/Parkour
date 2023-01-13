@@ -1,5 +1,7 @@
 import numpy as np 
 from scipy.spatial import distance
+import os
+import json
 
 VECTOR3 = [0,0,0]
 KEY_CODE = {'Z': 6,'X': 7, 'C': 8,'V': 9, 'SPACE': 49, 'LEFT': 123, 'RIGHT': 124, 'DOWN' : 125, 'UP': 126}
@@ -7,6 +9,15 @@ X = 0
 Y = 1
 Z = 2
 UPDATE_TIME = 20
+IDLE_INDEX = 30
+
+upper_dir_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
+pose_path =  upper_dir_path + '/dataset/PoseDB.json'
+with open(pose_path, 'r') as f: poses = json.load(f)
+
+feature_path = upper_dir_path + '/dataset/FeatureDB.json'
+with open(feature_path, 'r') as f: features = json.load(f)
 
 def substractArray3(fir,sec):
     return [fir[0]-sec[0],fir[1]-sec[1],fir[2]-sec[2]]
@@ -56,6 +67,6 @@ def calculateDistance(feature, query):
     # print('피쳐의 trajectory 출력 : ', feature)
     # print('쿼리 벡터 출력 : ', query)
     for i in range(len(feature)):
-        total += distance.euclidean([feature[i][0]/100,feature[i][1]/100,feature[i][2]/100], query[i])
+        total += distance.euclidean(feature[i], query[i])
         print('각 차이 : idx = ', i, distance.euclidean(feature[i], query[i]))
     return total

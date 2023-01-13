@@ -94,10 +94,10 @@ def poseDB2featureDB():
         # 포즈 특징 채워주기
         root_velocity = FRAME[HIP_KEY]['velocity'] 
 
-        Rfoot_location = FRAME['mixamorig2:RightFoot']['location']
+        Rfoot_location = FRAME['mixamorig2:RightFoot']['tailLocation']
         Rfoot_velocity = FRAME['mixamorig2:RightFoot']['velocity']
 
-        Lfoot_location = FRAME['mixamorig2:LeftFoot']['location']
+        Lfoot_location = FRAME['mixamorig2:LeftFoot']['tailLocation']
         Lfoot_velocity = FRAME['mixamorig2:LeftFoot']['velocity']
 
 
@@ -130,7 +130,7 @@ def poseDB2featureDB():
                                 global2local(FUTURE8['velocity'], M), global2local(FUTURE12['velocity'],M), 
                                 global2local(FUTURE16['velocity'], M), global2local(FUTURE20['velocity'], M)]
 
-        new_feature = Feature(global2local(root_velocity,M), Rfoot_location, Rfoot_velocity, Lfoot_location, 
+        new_feature = Feature(global2local(root_velocity,M), global2local(Rfoot_location,M), Rfoot_velocity, global2local(Lfoot_location,M), 
                         Lfoot_velocity, trajectory_location, trajectory_direction, ANIM_INFO['index'])
 
         # 각 파일에 들어갈 피쳐 배열에 추가

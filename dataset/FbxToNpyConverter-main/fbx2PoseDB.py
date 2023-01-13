@@ -28,9 +28,10 @@ class AnimInfo:
         self.index = index
 
 class Joint:
-    def __init__(self, location, rotation, angular_velocity, velocity):
+    def __init__(self, location, rotation, angular_velocity, velocity, tail):
         self.location = location
         self.rotation = rotation
+        self.tailLocation = tail
         self.angularVelocity = angular_velocity
         self.velocity = velocity  
 
@@ -108,7 +109,7 @@ def fbx2PoseDB():
             bone_struct = bpy.data.objects['Armature'].pose.bones
             joint_names = bone_struct.keys()
 
-            out_dict = {'joints': {}, 'animInfo': [], 'zAxis': []}       
+            out_dict = {'joints': {}, 'animInfo': []}       
             for name in joint_names:
                 correct_name = name
                 for wrong in WRONG_PREFIX:
@@ -119,6 +120,7 @@ def fbx2PoseDB():
                 local_rotation = bone_struct[name].rotation_quaternion
 
                 location = [local_location[X], local_location[Y], local_location[Z]]
+                tail_location = [bone_struct[name].tail[X]/100, bone_struct[name].tail[Y]/100, bone_struct[name].tail[Z]/100]
                 rotation = [local_rotation.w,local_rotation.x,local_rotation.y,local_rotation.z]
 
                 # 속도 구하기 위해
@@ -139,7 +141,7 @@ def fbx2PoseDB():
                     out_dict['axes'] = np.array([bone_struct[name].x_axis, bone_struct[name].y_axis, bone_struct[name].z_axis]).tolist()
                     
                 # 새로운 joint 추가
-                joint = Joint(location, rotation, angular_velocity, velocity)
+                joint = Joint(location, rotation, angular_velocity, velocity, tail_location)
                 out_dict['joints'][correct_name] = joint.__dict__
                 
                 prev_location[name] = location # name, correct_name 관련 없지만 일단 name으로 둠

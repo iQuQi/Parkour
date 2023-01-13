@@ -11,7 +11,7 @@ from utils.common import *
 
 JUMP = 'V'
 CROUCH = 'C'
-ZERO_VELOCITY = 0.01
+ZERO_VELOCITY = 0.00000001
 
 
 
@@ -55,7 +55,7 @@ class ModalOperator(bpy.types.Operator):
     nowLocation =[0,0,0] 
     nowVelocity = -1
     desiredLocation = [0,0,0] 
-    smoothTime = 1    # 최대 속도일 때, 목표물에 도달하는 예상 시간
+    smoothTime = 0.25    # 최대 속도일 때, 목표물에 도달하는 예상 시간
 
     prevVelocity = [0,-1,0] 
     
@@ -66,7 +66,17 @@ class ModalOperator(bpy.types.Operator):
         print("Start")
 
     def __del__(self):
-        print("End")
+        print("End")      
+        obj = bpy.context.object
+        bone_struct = obj.pose.bones
+        joint_names = bone_struct.keys()
+
+        for joint in joint_names:
+            jointRotation = poses[IDLE_INDEX]['joints'][joint]['rotation']
+            jointLocation = poses[IDLE_INDEX]['joints'][joint]['location']
+            bone_struct[joint].location = jointLocation            
+            bone_struct[joint].rotation_quaternion = jointRotation
+
 
     def execute(self, context):
         return {'FINISHED'}
@@ -113,11 +123,14 @@ class ModalOperator(bpy.types.Operator):
                         bone_struct['mixamorig2:Hips'].location[1]/100]
 
         # 포즈 특징 채우기
-        boneStructs = self.motionMatcher.getCurrentPose()
-        poseDBVelocity = boneStructs['mixamorig2:Hips']['velocity']
+        poseStructs = self.motionMatcher.getCurrentPose()
+        featureStructs = self.motionMatcher.getCurrentFeature()
+        poseDBVelocity = poseStructs['mixamorig2:Hips']['velocity']
         speed = np.linalg.norm([poseDBVelocity[0]/100,poseDBVelocity[1]/100,poseDBVelocity[2]/100]) 
         if speed == 0: speed = ZERO_VELOCITY
         rootVelocity = np.array([bone_struct['mixamorig2:Hips'].z_axis[0]*speed,(-1*speed)*bone_struct['mixamorig2:Hips'].z_axis[2],speed*bone_struct['mixamorig2:Hips'].z_axis[1]])
+        #rootVelocity = np.array([bone_struct['mixamorig2:Hips'].z_axis[0],(-1)*bone_struct['mixamorig2:Hips'].z_axis[2],bone_struct['mixamorig2:Hips'].z_axis[1]])
+
         axes = [
             [bone_struct['mixamorig2:Hips'].x_axis[0], (-1)*bone_struct['mixamorig2:Hips'].x_axis[2], bone_struct['mixamorig2:Hips'].x_axis[1]],
             [bone_struct['mixamorig2:Hips'].y_axis[0], (-1)*bone_struct['mixamorig2:Hips'].y_axis[2], bone_struct['mixamorig2:Hips'].y_axis[1]],
@@ -125,25 +138,27 @@ class ModalOperator(bpy.types.Operator):
         ]
         updateM(globalLocation, axes)
         rootVelocity = global2local(rootVelocity.tolist())
-        print('루트 속도&글로벌 위치', speed,rootVelocity, globalLocation )
+        print('루트 속도&글로벌 위치',rootVelocity, globalLocation )
 
-        RfootLocation = boneStructs['mixamorig2:RightFoot']['location']
-        RfootVelocity= boneStructs['mixamorig2:RightFoot']['velocity']
+        RfootLocation = featureStructs['footLocation']['right']
+        RfootVelocity= poseStructs['mixamorig2:RightFoot']['velocity']
 
-        LfootLocation = boneStructs['mixamorig2:LeftFoot']['location']
-        LfootVelocity= boneStructs['mixamorig2:LeftFoot']['velocity']
+        LfootLocation = featureStructs['footLocation']['left']
+        LfootVelocity= poseStructs['mixamorig2:LeftFoot']['velocity']
 
 
   
         self.nowLocation = [0, 0, 0]
         self.nowVelocity = [rootVelocity[0],rootVelocity[1],rootVelocity[2]]
+        #self.nowVelocity = [0.1,0.1,0.1]
         self.desiredLocation =  input_direction
 
         printPoint = []
         trajectoryLocation = []
         trajectoryDirection = []
         for index in range(12):
-            updatePosition =  self.calculateFutureTrajectory(0.07)
+            updatePosition =  self.calculateFutureTrajectory(0.13)
+            print('UPDATE POINT:', updatePosition)
             if index % 2 != 0: 
                 printPoint.append(local2global(updatePosition.tolist()))
                 trajectoryLocation.extend(updatePosition)
@@ -157,7 +172,7 @@ class ModalOperator(bpy.types.Operator):
 
         #return rootVelocity + LfootVelocity + RfootVelocity + LfootLocation + RfootLocation + trajectoryLocation + trajectoryDirection
 
-        # return LfootLocation + RfootLocation + trajectoryLocation
+        #return LfootLocation + RfootLocation + trajectoryLocation
         return trajectoryLocation
 
     def calculateFutureTrajectory(self,timeDelta):

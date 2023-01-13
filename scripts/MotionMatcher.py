@@ -13,14 +13,6 @@ import mathutils
 #Combined Files Path
 COMBINED_FILE_PATH = os.path.abspath('dataSet.npy')
 
-upper_dir_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-
-pose_path =  upper_dir_path + '/dataset/PoseDB.json'
-with open(pose_path, 'r') as f: poses = json.load(f)
-
-feature_path = upper_dir_path + '/dataset/FeatureDB.json'
-with open(feature_path, 'r') as f: features = json.load(f)
-
 class MotionMatcher:
     motion = ''
     time = UPDATE_TIME
@@ -42,7 +34,7 @@ class MotionMatcher:
         for feature in features:
             #point = feature['rootSpeed'].copy()
             point = []
-            # point = feature['footLocation']['left'] + feature['footLocation']['right'] # foot 추가
+            #point = feature['footLocation']['left'] + feature['footLocation']['right'] # foot 추가
 
             for location in feature['trajectoryLocation']:
                 point += ([location[0]/100, location[1]/100, location[2]/100])
@@ -61,17 +53,27 @@ class MotionMatcher:
 
     def start():
         print('START')
+       
 
-    def update():
+    def __del__(self):
+        print('MOTION matcher DEL')
+  
+
+    def update(): 
         print('UPDATE')
 
     def getCurrentPose(self):
         return poses[self.matched_frame_index]['joints']
 
+    def getCurrentFeature(self):
+        return features[self.featureIndex]
+
     def updateMatchedMotion(self, query, crouch, jump):
         print('Function CALL - UpdateMatchedMotion:   ', query)
         obj = bpy.context.object
         bone_struct = obj.pose.bones
+        #print('HEAD:', bone_struct['mixamorig2:LeftFoot'].tail)
+
         joint_names = bone_struct.keys()
         
         # 매칭 프레임 찾기
@@ -85,11 +87,15 @@ class MotionMatcher:
             self.matched_frame_index = features[findIndex]['poseIndex']
             self.featureIndex = findIndex
 
-            # bruteforce
+            # # bruteforce
             # min = 2147483647
             # minIdx = -1
             # for idx, feature in enumerate(features):
-            #     res = calculateDistance(feature['trajectoryLocation'], query)
+            #     featureArray = feature['footLocation']['left'] + feature['footLocation']['right'] # foot 추가
+            #     for location in feature['trajectoryLocation']:
+            #         featureArray += ([location[0]/100, location[1]/100, location[2]/100])
+
+            #     res = calculateDistance(featureArray, query)
             #     if res < min:
             #         min = res
             #         minIdx = idx
@@ -116,7 +122,6 @@ class MotionMatcher:
             jointLocation = poses[self.matched_frame_index]['joints'][joint]['location']
             # 힙 조인트 위치정보 업데이트                
             if joint == 'mixamorig2:Hips': 
-                # exceptionCheck = np.linalg.norm(substractArray3(addArray3(jointLocation, self.locationDiff),self.prevRootLocation)) > 100
                 if self.time == UPDATE_TIME: # update time 20까지는 괜찮음
                     self.firstPoseRotation = jointRotation # 초기 pose의 rotation
                     self.firstPoseLocation = jointLocation # 초기 pose의 location
@@ -127,32 +132,12 @@ class MotionMatcher:
                 self.locationDiff = self.firstNowRotation.to_matrix()@self.firstPoseRotation.to_matrix().inverted_safe()@mathutils.Vector((substractArray3(jointLocation, self.firstPoseLocation)))
                 # 보정
                 bone_struct[joint].location = addArray3(self.firstNowLocation, self.locationDiff)
-                
-                # bone_struct[joint].rotation_quaternion = jointRotation 
-                if np.isnan(self.firstPoseRotation.w):
-                    bone_struct[joint].rotation_quaternion = jointRotation 
-                else:
-                    print('회전 확인', (self.firstPoseRotation).to_euler())
-                    bone_struct[joint].rotation_quaternion = (self.firstNowRotation.to_matrix()@self.firstPoseRotation.to_matrix().inverted_safe()@jointRotation.to_matrix()).to_quaternion()
-                # bone_struct[joint].rotation_quaternion.rotate(self.rotationDiff)
-
-                
-                
+                bone_struct[joint].rotation_quaternion = (self.firstNowRotation.to_matrix()@self.firstPoseRotation.to_matrix().inverted_safe()@jointRotation.to_matrix()).to_quaternion()
                 
             # 나머지 조인트 위치정보 업데이트
             else: 
                 bone_struct[joint].location = jointLocation            
                 bone_struct[joint].rotation_quaternion = jointRotation
-
-
-
-        # bpy.data.objects['Cone'].location = [bone_struct['mixamorig2:Hips'].matrix[0][0],(-1)*bone_struct['mixamorig2:Hips'].matrix[2][0],bone_struct['mixamorig2:Hips'].matrix[1][0]]
-        # bpy.data.objects['Cylinder'].location =  [bone_struct['mixamorig2:Hips'].matrix[0][1],(-1)*bone_struct['mixamorig2:Hips'].matrix[2][1],bone_struct['mixamorig2:Hips'].matrix[1][1]]
-        # bpy.data.objects['Cube'].location =  [bone_struct['mixamorig2:Hips'].matrix[0][2],(-1)*bone_struct['mixamorig2:Hips'].matrix[2][2],bone_struct['mixamorig2:Hips'].matrix[1][2]]
-
-
-
-        # 궤도 특징 채우기 => 지수 함수 생성으로 예측
         
         # 시간 업데이트
         self.time = (self.time + 1) % (UPDATE_TIME + 1)

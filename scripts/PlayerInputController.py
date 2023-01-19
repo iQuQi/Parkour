@@ -88,6 +88,12 @@ class ModalOperator(bpy.types.Operator):
             elif value == 'RELEASE':
                 self.KEY_MAP[type] = False
 
+    def calculateStandard(self, data, mean, std):
+        locationList = []
+        for location in data:
+            locationList.append((location-mean)/std)
+        return locationList
+
     def move(self):
         input_direction = np.array([0, 0, 0])
 
@@ -124,7 +130,7 @@ class ModalOperator(bpy.types.Operator):
 
         # 포즈 특징 채우기
         poseStructs = self.motionMatcher.getCurrentPose()
-        featureStructs = self.motionMatcher.getCurrentFeature()
+        
         poseDBVelocity = poseStructs['mixamorig2:Hips']['velocity']
         speed = np.linalg.norm([poseDBVelocity[0]/100,poseDBVelocity[1]/100,poseDBVelocity[2]/100]) 
         if speed == 0: speed = ZERO_VELOCITY
@@ -140,10 +146,10 @@ class ModalOperator(bpy.types.Operator):
         rootVelocity = global2local(rootVelocity.tolist())
         print('루트 속도&글로벌 위치',rootVelocity, globalLocation )
 
-        RfootLocation = featureStructs['footLocation']['right']
+        RfootLocation = poseStructs['mixamorig2:RightFoot']['tailLocation']
         RfootVelocity= poseStructs['mixamorig2:RightFoot']['velocity']
 
-        LfootLocation = featureStructs['footLocation']['left']
+        LfootLocation = poseStructs['mixamorig2:LeftFoot']['tailLocation']
         LfootVelocity= poseStructs['mixamorig2:LeftFoot']['velocity']
 
 
@@ -172,8 +178,11 @@ class ModalOperator(bpy.types.Operator):
 
         #return rootVelocity + LfootVelocity + RfootVelocity + LfootLocation + RfootLocation + trajectoryLocation + trajectoryDirection
 
-        #return LfootLocation + RfootLocation + trajectoryLocation
+        # return self.calculateStandard(LfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) +self.calculateStandard(RfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) + self.calculateStandard(trajectoryLocation, features[-1]['mean']['hips']['location'], features[-1]['std']['hips']['location'])
+        # return self.calculateStandard(trajectoryLocation, features[-1]['mean']['hips']['location'], features[-1]['std']['hips']['location'])
         return trajectoryLocation
+
+   
 
     def calculateFutureTrajectory(self,timeDelta):
         omega = 2.0/self.smoothTime

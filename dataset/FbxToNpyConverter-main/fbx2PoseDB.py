@@ -20,6 +20,11 @@ X = 0
 Y = 1
 Z = 2
 
+def global2local(fir,M ):
+    tmp = fir.copy()
+    tmp.append(1)
+    return (M@tmp)[:-1].tolist()
+
 class AnimInfo:
     def __init__(self, name, index, start, end):
         self.name = name
@@ -140,8 +145,19 @@ def fbx2PoseDB():
                 if name[-4:]=='Hips':
                     out_dict['axes'] = np.array([bone_struct[name].x_axis, bone_struct[name].y_axis, bone_struct[name].z_axis]).tolist()
                     
+                # M matrix 생성
+                x_u = out_dict['axes'][0]
+                y_v = out_dict['axes'][1]
+                z_w = out_dict['axes'][2] # z_w
+                M = [[x_u[0], y_v[0], z_w[0], location[0]],
+                    [x_u[1], y_v[1], z_w[1],  location[1]],
+                    [x_u[2],  y_v[2], z_w[2], location[2]],
+                    [0, 0, 0, 1]]
+
+                M = np.linalg.inv(M)
+
                 # 새로운 joint 추가
-                joint = Joint(location, rotation, angular_velocity, velocity, tail_location)
+                joint = Joint(location, rotation, angular_velocity, velocity, global2local(tail_location,M))
                 out_dict['joints'][correct_name] = joint.__dict__
                 
                 prev_location[name] = location # name, correct_name 관련 없지만 일단 name으로 둠

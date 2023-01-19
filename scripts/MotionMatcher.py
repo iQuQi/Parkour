@@ -31,23 +31,21 @@ class MotionMatcher:
         self.motion = 'idle'
         # 트리 생성해주기
         point_list = []
-        for feature in features:
+        for i in range(len(features)-1):
             #point = feature['rootSpeed'].copy()
             point = []
-            #point = feature['footLocation']['left'] + feature['footLocation']['right'] # foot 추가
+            # point = features[i]['footLocation']['left'] + features[i]['footLocation']['right'] # foot 추가
 
-            for location in feature['trajectoryLocation']:
-                point += ([location[0]/100, location[1]/100, location[2]/100])
+            for location in features[i]['trajectoryLocation']:
+                # point += [location[0]/100, location[1]/100, location[2]/100]
+                point += [location[0], location[1], location[2]]
 
-            # for direction in feature['trajectoryDirection']:
-            #     point += direction
-
-
+            print('이건 포인트', point)
             point_list.append(point)
         
            
         # [([speed], [], [], []), (speed, [location]), ()]
-        print('point_list : ', point_list)
+        # print('point_list : ', point_list)
         self.tree = spatial.KDTree(point_list)
 
 
@@ -83,7 +81,12 @@ class MotionMatcher:
             # print('쿼리...',query)
 
             # self.matched_frame_index = random.randint(1,728)
-            # findIndex = 10
+
+            # 이름이 같을 때
+            # if poses[self.matched_frame_index]['animInfo'][0]['index']<poses[self.matched_frame_index]['animInfo'][0]['end']-1 and poses[features[findIndex]['poseIndex']]['animInfo'][0]['name']==poses[self.matched_frame_index]['animInfo'][0]['name']:
+            #     self.matched_frame_index = self.matched_frame_index+1
+                
+            # else:
             self.matched_frame_index = features[findIndex]['poseIndex']
             self.featureIndex = findIndex
 
@@ -112,7 +115,7 @@ class MotionMatcher:
         #  피쳐의 궤적 출력
         print('매칭된 인덱스', self.matched_frame_index)
         for index, point in enumerate(features[self.featureIndex]['trajectoryLocation']):
-            bpy.data.objects['Feature'+ str(index+1)].location = local2global([point[0]/100,point[1]/100,point[2]/100])
+            bpy.data.objects['Feature'+ str(index+1)].location = local2global([point[0],point[1],point[2]])
 
         print('애니메이션 이름 : ', poses[self.matched_frame_index]['animInfo'][0]['name'])
         # 해당하는 프레임으로 애니메이션 교체 & 재생 
@@ -132,7 +135,17 @@ class MotionMatcher:
                 self.locationDiff = self.firstNowRotation.to_matrix()@self.firstPoseRotation.to_matrix().inverted_safe()@mathutils.Vector((substractArray3(jointLocation, self.firstPoseLocation)))
                 # 보정
                 bone_struct[joint].location = addArray3(self.firstNowLocation, self.locationDiff)
-                bone_struct[joint].rotation_quaternion = (self.firstNowRotation.to_matrix()@self.firstPoseRotation.to_matrix().inverted_safe()@jointRotation.to_matrix()).to_quaternion()
+                # bone_struct[joint].location[0] = self.firstPoseLocation[0]
+                bone_struct[joint].location[1] = self.firstPoseLocation[1]
+
+                mat = self.firstNowRotation.to_matrix()@self.firstPoseRotation.to_matrix().inverted_safe()@jointRotation.to_matrix()
+                now_mat = self.firstPoseRotation.to_matrix()
+                for i in range(3):
+                    mat[i][1]=now_mat[i][1]
+                    # mat[i][0]=now_mat[i][0]
+                    # mat[i][2]=now_mat[i][2]
+    
+                bone_struct[joint].rotation_quaternion = mat.to_quaternion()
                 
             # 나머지 조인트 위치정보 업데이트
             else: 

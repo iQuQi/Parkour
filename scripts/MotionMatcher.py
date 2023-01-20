@@ -33,14 +33,16 @@ class MotionMatcher:
         point_list = []
         for i in range(len(features)-1):
             #point = feature['rootSpeed'].copy()
-            point = []
-            # point = features[i]['footLocation']['left'] + features[i]['footLocation']['right'] # foot 추가
+            # point = []
+            point = features[i]['footLocation']['left'] + features[i]['footLocation']['right'] # foot 추가
 
             for location in features[i]['trajectoryLocation']:
                 # point += [location[0]/100, location[1]/100, location[2]/100]
-                point += [location[0], location[1], location[2]]
+                # point += [location[0], location[1], location[2]]
+                
+                point += (np.array(location)*10).tolist()
 
-            print('이건 포인트', point)
+            
             point_list.append(point)
         
            
@@ -78,6 +80,7 @@ class MotionMatcher:
         if self.time == UPDATE_TIME:
             # 쿼리벡터 넣어주기
             distance, findIndex = self.tree.query(query)
+            print('이게 포인트', features[findIndex]['trajectoryLocation'])
             # print('쿼리...',query)
 
             # self.matched_frame_index = random.randint(1,728)
@@ -136,15 +139,17 @@ class MotionMatcher:
                 # 보정
                 bone_struct[joint].location = addArray3(self.firstNowLocation, self.locationDiff)
                 # bone_struct[joint].location[0] = self.firstPoseLocation[0]
-                bone_struct[joint].location[1] = self.firstPoseLocation[1]
+                bone_struct[joint].location[1] = jointLocation[1]
 
                 mat = self.firstNowRotation.to_matrix()@self.firstPoseRotation.to_matrix().inverted_safe()@jointRotation.to_matrix()
-                now_mat = self.firstPoseRotation.to_matrix()
+                now_mat = jointRotation.to_matrix()
+                
                 for i in range(3):
                     mat[i][1]=now_mat[i][1]
                     # mat[i][0]=now_mat[i][0]
                     # mat[i][2]=now_mat[i][2]
-    
+                    # this[i][1] = now_mat[i][1]
+
                 bone_struct[joint].rotation_quaternion = mat.to_quaternion()
                 
             # 나머지 조인트 위치정보 업데이트

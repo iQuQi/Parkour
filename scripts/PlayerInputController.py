@@ -164,7 +164,7 @@ class ModalOperator(bpy.types.Operator):
         trajectoryDirection = []
         for index in range(12):
             updatePosition =  self.calculateFutureTrajectory(0.13)
-            print('UPDATE POINT:', updatePosition)
+            # print('UPDATE POINT:', updatePosition)
             if index % 2 != 0: 
                 printPoint.append(local2global(updatePosition.tolist()))
                 trajectoryLocation.extend(updatePosition)
@@ -173,14 +173,15 @@ class ModalOperator(bpy.types.Operator):
 
 
         for index, point in enumerate(printPoint):
-            print('궤적 예측 포인트 출력:', point)
+            # print('궤적 예측 포인트 출력:', point)
             bpy.data.objects['Point'+ str(index+1)].location = point
 
+        print('궤적 예측 포인트-Local', trajectoryLocation)
         #return rootVelocity + LfootVelocity + RfootVelocity + LfootLocation + RfootLocation + trajectoryLocation + trajectoryDirection
 
         # return self.calculateStandard(LfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) +self.calculateStandard(RfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) + self.calculateStandard(trajectoryLocation, features[-1]['mean']['hips']['location'], features[-1]['std']['hips']['location'])
-        # return self.calculateStandard(trajectoryLocation, features[-1]['mean']['hips']['location'], features[-1]['std']['hips']['location'])
-        return trajectoryLocation
+        return self.calculateStandard(LfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) +self.calculateStandard(RfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) + (np.array(trajectoryLocation)*10).tolist()
+        # return trajectoryLocation
 
    
 

@@ -33,14 +33,15 @@ class MotionMatcher:
         point_list = []
         for i in range(len(features)-1):
             #point = feature['rootSpeed'].copy()
-            # point = []
-            point = features[i]['footLocation']['left'] + features[i]['footLocation']['right'] # foot 추가
+            point = []
+            # point = features[i]['footLocation']['left'] + features[i]['footLocation']['right'] # foot 추가
 
             for location in features[i]['trajectoryLocation']:
                 # point += [location[0]/100, location[1]/100, location[2]/100]
                 # point += [location[0], location[1], location[2]]
                 
-                point += (np.array(location)*10).tolist()
+                # point += (np.array(location)*10).tolist()
+                point += (np.array(location)).tolist()
 
             
             point_list.append(point)
@@ -69,7 +70,7 @@ class MotionMatcher:
         return features[self.featureIndex]
 
     def updateMatchedMotion(self, query, crouch, jump):
-        print('Function CALL - UpdateMatchedMotion:   ', query)
+        # print('Function CALL - UpdateMatchedMotion:   ', query)
         obj = bpy.context.object
         bone_struct = obj.pose.bones
         #print('HEAD:', bone_struct['mixamorig2:LeftFoot'].tail)
@@ -115,12 +116,8 @@ class MotionMatcher:
         else: 
             self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
 
-        #  피쳐의 궤적 출력
-        print('매칭된 인덱스', self.matched_frame_index)
-        for index, point in enumerate(features[self.featureIndex]['trajectoryLocation']):
-            bpy.data.objects['Feature'+ str(index+1)].location = local2global([point[0],point[1],point[2]])
 
-        print('애니메이션 이름 : ', poses[self.matched_frame_index]['animInfo'][0]['name'])
+        # print('애니메이션 이름 : ', poses[self.matched_frame_index]['animInfo'][0]['name'])
         # 해당하는 프레임으로 애니메이션 교체 & 재생 
         for joint in joint_names:
             # 조인트 회전 정보 업데이트
@@ -137,9 +134,9 @@ class MotionMatcher:
                     
                 self.locationDiff = self.firstNowRotation.to_matrix()@self.firstPoseRotation.to_matrix().inverted_safe()@mathutils.Vector((substractArray3(jointLocation, self.firstPoseLocation)))
                 # 보정
-                bone_struct[joint].location = addArray3(self.firstNowLocation, self.locationDiff)
+                bone_struct[joint].location = addArray3(self.firstNowLocation, self.locationDiff) # 수평방향 고정
                 # bone_struct[joint].location[0] = self.firstPoseLocation[0]
-                bone_struct[joint].location[1] = jointLocation[1]
+                bone_struct[joint].location[1] = jointLocation[1] # 높이 고정
 
                 mat = self.firstNowRotation.to_matrix()@self.firstPoseRotation.to_matrix().inverted_safe()@jointRotation.to_matrix()
                 now_mat = jointRotation.to_matrix()
@@ -151,6 +148,18 @@ class MotionMatcher:
                     # this[i][1] = now_mat[i][1]
 
                 bone_struct[joint].rotation_quaternion = mat.to_quaternion()
+
+                #  피쳐의 궤적 출력
+                # print('매칭된 인덱스', self.matched_frame_index)
+                for index in range(6): # 0~5까지
+                    if self.matched_frame_index + index*4 <= poses[self.matched_frame_index]['animInfo'][0]['end']:
+                        diffdiff = self.firstNowRotation.to_matrix()@self.firstPoseRotation.to_matrix().inverted_safe()@mathutils.Vector((substractArray3(poses[self.matched_frame_index + index*4]['joints'][joint]['location'], self.firstPoseLocation)))
+                        listlist = np.array(addArray3(self.firstNowLocation, diffdiff))/100
+                        bpy.data.objects['Feature'+ str(index+1)].hide_viewport = False
+                        bpy.data.objects['Feature'+ str(index+1)].location = [listlist[0], (-1)*listlist[2], listlist[1]]
+                        bpy.data.objects['Feature'+ str(index+1)].location[2] = (-1/100)*jointLocation[1]
+                    else:
+                        bpy.data.objects['Feature'+ str(index+1)].hide_viewport = True
                 
             # 나머지 조인트 위치정보 업데이트
             else: 

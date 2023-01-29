@@ -34,13 +34,14 @@ class QueryVector:
         # TODO: 손 정보 추가
     
     def toString(self):
-        print('--- 쿼리 벡터 정보 출력하기 ---')
-        print('rootSpeed:', self.rootSpeed)
-        print('trajectoryLocation:', self.trajectoryLocation)
-        print('trajectoryDirection:', self.trajectoryDirection)
-        print('footLocation:', self.footLocation)
-        print('footSpeed:', self.footSpeed)
-        print('-------------------------')
+        # print('--- 쿼리 벡터 정보 출력하기 ---')
+        # print('rootSpeed:', self.rootSpeed)
+        # print('trajectoryLocation:', self.trajectoryLocation)
+        # print('trajectoryDirection:', self.trajectoryDirection)
+        # print('footLocation:', self.footLocation)
+        # print('footSpeed:', self.footSpeed)
+        # print('-------------------------')
+        print()
 
 
     
@@ -112,7 +113,7 @@ class ModalOperator(bpy.types.Operator):
         if self.KEY_MAP[CROUCH]:
             input_direction[Y] += (-1) 
 
-        print('입력!!---', input_direction)
+        # print('입력!!---', input_direction)
         
         if np.linalg.norm(input_direction) > 0: 
             #normalized_input_direction = input_direction/np.linalg.norm(input_direction)
@@ -144,7 +145,7 @@ class ModalOperator(bpy.types.Operator):
         ]
         updateM(globalLocation, axes)
         rootVelocity = global2local(rootVelocity.tolist())
-        print('루트 속도&글로벌 위치',rootVelocity, globalLocation )
+        # print('루트 속도&글로벌 위치',rootVelocity, globalLocation )
 
         RfootLocation = poseStructs['mixamorig2:RightFoot']['tailLocation']
         RfootVelocity= poseStructs['mixamorig2:RightFoot']['velocity']
@@ -176,12 +177,13 @@ class ModalOperator(bpy.types.Operator):
             # print('궤적 예측 포인트 출력:', point)
             bpy.data.objects['Point'+ str(index+1)].location = point
 
-        print('궤적 예측 포인트-Local', trajectoryLocation)
+        print('궤적 예측 포인트-Local', self.calculateStandard(trajectoryLocation, features[-1]['mean']['hips']['location'], features[-1]['std']['hips']['location']))
         #return rootVelocity + LfootVelocity + RfootVelocity + LfootLocation + RfootLocation + trajectoryLocation + trajectoryDirection
 
         # return self.calculateStandard(LfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) +self.calculateStandard(RfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) + self.calculateStandard(trajectoryLocation, features[-1]['mean']['hips']['location'], features[-1]['std']['hips']['location'])
-        return self.calculateStandard(LfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) +self.calculateStandard(RfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) + (np.array(trajectoryLocation)*10).tolist()
+        # return self.calculateStandard(LfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) +self.calculateStandard(RfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) + (np.array(trajectoryLocation)*10).tolist()
         # return trajectoryLocation
+        return self.calculateStandard(trajectoryLocation, features[-1]['mean']['hips']['location'], features[-1]['std']['hips']['location'])
 
    
 

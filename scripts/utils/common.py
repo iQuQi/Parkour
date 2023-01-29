@@ -8,7 +8,7 @@ KEY_CODE = {'Z': 6,'X': 7, 'C': 8,'V': 9, 'SPACE': 49, 'LEFT': 123, 'RIGHT': 124
 X = 0
 Y = 1
 Z = 2
-UPDATE_TIME = 25
+UPDATE_TIME = 20
 IDLE_INDEX = 30
 
 upper_dir_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))

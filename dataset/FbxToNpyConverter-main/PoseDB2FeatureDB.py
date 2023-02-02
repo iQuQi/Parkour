@@ -143,12 +143,20 @@ def poseDB2featureDB():
 
         # 궤적 특징 채워주기
        
-        NOW = standard_hips[i]
-        FUTURE4 = standard_hips[i+4]
-        FUTURE8 = standard_hips[i+8]
-        FUTURE12 = standard_hips[i+12]
-        FUTURE16 = standard_hips[i+16]
-        FUTURE20 = standard_hips[i+20]
+        # NOW = standard_hips[i]
+        # FUTURE4 = standard_hips[i+4]
+        # FUTURE8 = standard_hips[i+8]
+        # FUTURE12 = standard_hips[i+12]
+        # FUTURE16 = standard_hips[i+16]
+        # FUTURE20 = standard_hips[i+20]
+
+        NOW = frames[i]['joints'][HIP_KEY]
+        FUTURE4 = frames[i+4]['joints'][HIP_KEY]
+        FUTURE8 = frames[i+8]['joints'][HIP_KEY]
+        FUTURE12 = frames[i+12]['joints'][HIP_KEY]
+        FUTURE16 = frames[i+16]['joints'][HIP_KEY]
+        FUTURE20 = frames[i+20]['joints'][HIP_KEY]
+
 
 
         # z_w = np.array([frames[i]['zAxis'][0], (-1)*frames[i]['zAxis'][2], frames[i]['zAxis'][1]]) # z_w

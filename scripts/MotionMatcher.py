@@ -9,6 +9,7 @@ import random
 from utils.common import *
 from scipy import spatial 
 import mathutils
+from math import radians
 
 #Combined Files Path
 COMBINED_FILE_PATH = os.path.abspath('dataSet.npy')
@@ -37,11 +38,11 @@ class MotionMatcher:
             # point = features[i]['footLocation']['left'] + features[i]['footLocation']['right'] # foot 추가
 
             for location in features[i]['trajectoryLocation']:
-                # point += [location[0]/100, location[1]/100, location[2]/100]
+                point += [location[0]/100, location[1]/100, location[2]/100]
                 # point += [location[0], location[1], location[2]]
                 
                 # point += (np.array(location)*10).tolist()
-                point += (np.array(location)).tolist()
+                # point += (np.array(location)).tolist()
 
             
             point_list.append(point)
@@ -91,22 +92,25 @@ class MotionMatcher:
             #     self.matched_frame_index = self.matched_frame_index+1
                 
             # else:
-            self.matched_frame_index = features[findIndex]['poseIndex']
+            self.matched_frame_index = features[findIndex]['poseIndex']                
             self.featureIndex = findIndex
 
             # # bruteforce
             # min = 2147483647
             # minIdx = -1
             # for idx, feature in enumerate(features):
-            #     featureArray = feature['footLocation']['left'] + feature['footLocation']['right'] # foot 추가
+            #     if idx == (len(features)-1): break
+            #     featureArray = []
             #     for location in feature['trajectoryLocation']:
-            #         featureArray += ([location[0]/100, location[1]/100, location[2]/100])
+            #         featureArray.append([location[0]/100, location[1]/100, location[2]/100])
 
-            #     res = calculateDistance(featureArray, query)
+            #     res = calculateDistance(featureArray, np.reshape(query, (6,3)) )
             #     if res < min:
             #         min = res
             #         minIdx = idx
             #     print(res, poses[features[idx]['poseIndex']]['animInfo'][0]['name'])
+
+            # print('MIN => ',min, poses[features[minIdx]['poseIndex']]['animInfo'][0]['name'])
             
             # findIndex = minIdx
             # self.matched_frame_index = features[findIndex]['poseIndex']
@@ -117,7 +121,7 @@ class MotionMatcher:
             self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
 
 
-        # print('애니메이션 이름 : ', poses[self.matched_frame_index]['animInfo'][0]['name'])
+        print('애니메이션 이름 : ', poses[self.matched_frame_index]['animInfo'][0]['name'])
         # 해당하는 프레임으로 애니메이션 교체 & 재생 
         for joint in joint_names:
             # 조인트 회전 정보 업데이트
@@ -131,7 +135,7 @@ class MotionMatcher:
                     # 현재 힙 정보 저장해두기
                     self.firstNowLocation = bone_struct[joint].location.copy() # 초기 현재의 location
                     self.firstNowRotation = bone_struct[joint].rotation_quaternion.copy() # 초기 현재의 rotation
-                    
+
                 self.locationDiff = self.firstNowRotation.to_matrix()@self.firstPoseRotation.to_matrix().inverted_safe()@mathutils.Vector((substractArray3(jointLocation, self.firstPoseLocation)))
                 # 보정
                 bone_struct[joint].location = addArray3(self.firstNowLocation, self.locationDiff) # 수평방향 고정
@@ -140,7 +144,7 @@ class MotionMatcher:
 
                 mat = self.firstNowRotation.to_matrix()@self.firstPoseRotation.to_matrix().inverted_safe()@jointRotation.to_matrix()
                 now_mat = jointRotation.to_matrix()
-                
+
                 for i in range(3):
                     mat[i][1]=now_mat[i][1]
                     # mat[i][0]=now_mat[i][0]

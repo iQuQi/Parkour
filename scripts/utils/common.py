@@ -9,8 +9,9 @@ X = 0
 Y = 1
 Z = 2
 UPDATE_TIME = 20
-IDLE_INDEX = 30
-
+IDLE_INDEX = 449
+DEFAULT_EULER = [1.5708,0,0]
+          
 upper_dir_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 pose_path =  upper_dir_path + '/dataset/PoseDB.json'
@@ -68,5 +69,25 @@ def calculateDistance(feature, query):
     # print('쿼리 벡터 출력 : ', query)
     for i in range(len(feature)):
         total += distance.euclidean(feature[i], query[i])
-        print('각 차이 : idx = ', i, distance.euclidean(feature[i], query[i]))
+        print('각 차이 : idx = ', i, distance.euclidean(feature[i], query[i]),feature[i],query[i])
     return total
+
+def L2_norm(x):
+    x_norm = x * x
+    x_norm = np.sum(x_norm)
+    x_norm = np.sqrt(x_norm)
+    return x_norm
+
+def getRadian(x,y):
+    v = np.inner(x, y) / (L2_norm(x) * L2_norm(y))
+    radian = np.arccos(v)
+    print('getANGLE:', np.inner(x, y),L2_norm(x),L2_norm(y), v)
+    return radian
+
+
+def transformVectorFormat(vec):
+    vec = np.array(vec)
+    return np.array([vec[0], (-1)*vec[2], vec[1]])
+
+def transformMatrixFormat(mat):
+    return np.array([transformVectorFormat(mat[0]),transformVectorFormat(mat[1]),transformVectorFormat(mat[2])])

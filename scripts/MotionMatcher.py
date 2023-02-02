@@ -22,6 +22,8 @@ class MotionMatcher:
     firstPoseLocation = [0,0,0] # 초기 pose의 location
     firstNowLocation = [0,0,0] 
     firstNowRotation = [0,0,0,0]
+    
+    radian_xz = 0
 
     rotationDiff = [0,0,0,0]
     locationDiff = [0,0,0]
@@ -38,8 +40,9 @@ class MotionMatcher:
             # point = features[i]['footLocation']['left'] + features[i]['footLocation']['right'] # foot 추가
 
             for location in features[i]['trajectoryLocation']:
-                point += [location[0]/100, location[1]/100, location[2]/100]
+                # point += [location[0]/100, location[1]/100, location[2]/100]
                 # point += [location[0], location[1], location[2]]
+                point += [location[0]/100, 0, location[2]/100]
                 
                 # point += (np.array(location)*10).tolist()
                 # point += (np.array(location)).tolist()
@@ -73,6 +76,7 @@ class MotionMatcher:
     def updateMatchedMotion(self, query, crouch, jump):
         # print('Function CALL - UpdateMatchedMotion:   ', query)
         obj = bpy.context.object
+
         bone_struct = obj.pose.bones
         #print('HEAD:', bone_struct['mixamorig2:LeftFoot'].tail)
 
@@ -133,32 +137,37 @@ class MotionMatcher:
                     self.firstPoseRotation = jointRotation # 초기 pose의 rotation
                     self.firstPoseLocation = jointLocation # 초기 pose의 location
                     # 현재 힙 정보 저장해두기
-                    self.firstNowLocation = bone_struct[joint].location.copy() # 초기 현재의 location
-                    self.firstNowRotation = bone_struct[joint].rotation_quaternion.copy() # 초기 현재의 rotation
+                    obj.location = addArray3(obj.location,obj.rotation_euler.to_matrix()@mathutils.Vector([bone_struct[joint].location[0]/100,bone_struct[joint].location[1]/100,bone_struct[joint].location[2]/100]))
+                    obj.location[2] = 0
+                    
+                    bone_origin = mathutils.Quaternion(bone_struct[joint].rotation_quaternion).to_matrix()
+                    bone_vector = bone_origin[0]+bone_origin[1]+bone_origin[2]
+                    joint_origin = mathutils.Quaternion(jointRotation).to_matrix()
+                    joint_vector = joint_origin[0]+joint_origin[1]+joint_origin[2]
+                    joint_xz = 0
+                    bone_xz = 0
+                    if joint_vector[0]>0:
+                        joint_xz = np.arctan(joint_vector[2]/joint_vector[0])
+                    elif joint_vector[0]<0:
+                        joint_xz = np.arctan(joint_vector[2]/joint_vector[0]) + np.deg2rad(180)
+                    if bone_vector[0]>0:
+                        bone_xz = np.arctan(bone_vector[2]/bone_vector[0])
+                    elif bone_vector[0]<0:
+                        bone_xz = np.arctan(bone_vector[2]/bone_vector[0]) + np.deg2rad(180)
 
-                self.locationDiff = self.firstNowRotation.to_matrix()@self.firstPoseRotation.to_matrix().inverted_safe()@mathutils.Vector((substractArray3(jointLocation, self.firstPoseLocation)))
-                # 보정
-                bone_struct[joint].location = addArray3(self.firstNowLocation, self.locationDiff) # 수평방향 고정
+                    self.radian_xz = joint_xz - bone_xz
+                    print('라디안',joint)
+                    obj.rotation_euler.rotate(mathutils.Euler([0.0,0.0,-self.radian_xz],'XYZ'))
+
+                bone_struct[joint].location = substractArray3(jointLocation, self.firstPoseLocation) # 수평방향 고정
                 # bone_struct[joint].location[0] = self.firstPoseLocation[0]
-                bone_struct[joint].location[1] = jointLocation[1] # 높이 고정
+                # bone_struct[joint].location[1] = jointLocation[1] # 높이 고정
+                bone_struct[joint].rotation_quaternion = jointRotation
 
-                mat = self.firstNowRotation.to_matrix()@self.firstPoseRotation.to_matrix().inverted_safe()@jointRotation.to_matrix()
-                now_mat = jointRotation.to_matrix()
-
-                for i in range(3):
-                    mat[i][1]=now_mat[i][1]
-                    # mat[i][0]=now_mat[i][0]
-                    # mat[i][2]=now_mat[i][2]
-                    # this[i][1] = now_mat[i][1]
-
-                bone_struct[joint].rotation_quaternion = mat.to_quaternion()
-
-                #  피쳐의 궤적 출력
-                # print('매칭된 인덱스', self.matched_frame_index)
                 for index in range(6): # 0~5까지
                     if self.matched_frame_index + index*4 <= poses[self.matched_frame_index]['animInfo'][0]['end']:
-                        diffdiff = self.firstNowRotation.to_matrix()@self.firstPoseRotation.to_matrix().inverted_safe()@mathutils.Vector((substractArray3(poses[self.matched_frame_index + index*4]['joints'][joint]['location'], self.firstPoseLocation)))
-                        listlist = np.array(addArray3(self.firstNowLocation, diffdiff))/100
+                        diffdiff = substractArray3(poses[self.matched_frame_index + index*4]['joints'][joint]['location'], self.firstPoseLocation)
+                        listlist = np.array(addArray3(obj.location, diffdiff))/100
                         bpy.data.objects['Feature'+ str(index+1)].hide_viewport = False
                         bpy.data.objects['Feature'+ str(index+1)].location = [listlist[0], (-1)*listlist[2], listlist[1]]
                         bpy.data.objects['Feature'+ str(index+1)].location[2] = (-1/100)*jointLocation[1]

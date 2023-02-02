@@ -132,9 +132,9 @@ class ModalOperator(bpy.types.Operator):
     def createQueryVector(self, input_direction):
         obj = bpy.context.object
         bone_struct = obj.pose.bones
-        globalLocation = [bone_struct['mixamorig2:Hips'].location[0]/100,
-                        bone_struct['mixamorig2:Hips'].location[2]/(-100),
-                        bone_struct['mixamorig2:Hips'].location[1]/100]
+        globalLocation = [bone_struct['mixamorig2:Hips'].location[0]/100 + obj.location[0],
+                        bone_struct['mixamorig2:Hips'].location[2]/(-100) + obj.location[1],
+                        bone_struct['mixamorig2:Hips'].location[1]/100 + obj.location[2]]
 
         # 포즈 특징 채우기
         poseStructs = self.motionMatcher.getCurrentPose()
@@ -142,9 +142,12 @@ class ModalOperator(bpy.types.Operator):
         poseDBVelocity = poseStructs['mixamorig2:Hips']['velocity']
         speed = np.linalg.norm([poseDBVelocity[0]/100,poseDBVelocity[1]/100,poseDBVelocity[2]/100]) 
         if speed == 0: speed = ZERO_VELOCITY
-        rootVelocity = np.array([bone_struct['mixamorig2:Hips'].z_axis[0]*speed,(-1*speed)*bone_struct['mixamorig2:Hips'].z_axis[2],speed*bone_struct['mixamorig2:Hips'].z_axis[1]])
-        #rootVelocity = np.array([bone_struct['mixamorig2:Hips'].z_axis[0],(-1)*bone_struct['mixamorig2:Hips'].z_axis[2],bone_struct['mixamorig2:Hips'].z_axis[1]])
+        rootVelocity = np.array([bone_struct['mixamorig2:Hips'].z_axis[0]*speed,
+                    (-1*speed)*bone_struct['mixamorig2:Hips'].z_axis[2],
+                    speed*bone_struct['mixamorig2:Hips'].z_axis[1]])
 
+        #rootVelocity = np.array([bone_struct['mixamorig2:Hips'].z_axis[0],(-1)*bone_struct['mixamorig2:Hips'].z_axis[2],bone_struct['mixamorig2:Hips'].z_axis[1]])
+        
         axes = [
             [bone_struct['mixamorig2:Hips'].x_axis[0], (-1)*bone_struct['mixamorig2:Hips'].x_axis[2], bone_struct['mixamorig2:Hips'].x_axis[1]],
             [bone_struct['mixamorig2:Hips'].y_axis[0], (-1)*bone_struct['mixamorig2:Hips'].y_axis[2], bone_struct['mixamorig2:Hips'].y_axis[1]],

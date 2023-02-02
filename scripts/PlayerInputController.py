@@ -57,7 +57,7 @@ class ModalOperator(bpy.types.Operator):
     nowLocation =[0,0,0] 
     nowVelocity = -1
     desiredLocation = [0,0,0] 
-    smoothTime = 0.75    # 최대 속도일 때, 목표물에 도달하는 예상 시간
+    smoothTime = 1    # 최대 속도일 때, 목표물에 도달하는 예상 시간
 
     prevVelocity = [0,-1,0] 
     
@@ -180,6 +180,7 @@ class ModalOperator(bpy.types.Operator):
                 trajectoryLocation.extend(updatePosition)
                 trajectoryDirection.extend(substractArray3(updatePosition,self.nowLocation))
             self.nowLocation = updatePosition
+            self.desiredLocation = self.nowLocation + input_direction
 
 
         for index, point in enumerate(printPoint):

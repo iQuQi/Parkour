@@ -155,7 +155,6 @@ def poseDB2featureDB():
         FUTURE8 = frames[i+8]['joints'][HIP_KEY]
         FUTURE12 = frames[i+12]['joints'][HIP_KEY]
         FUTURE16 = frames[i+16]['joints'][HIP_KEY]
-        FUTURE20 = frames[i+20]['joints'][HIP_KEY]
 
 
 
@@ -172,11 +171,11 @@ def poseDB2featureDB():
         trajectory_location =[
                              global2local(NOW['location'], M),global2local(FUTURE4['location'], M),
                              global2local(FUTURE8['location'], M),global2local(FUTURE12['location'], M),
-                             global2local(FUTURE16['location'], M),global2local(FUTURE20['location'], M)
+                             global2local(FUTURE16['location'], M)
                              ]
         trajectory_direction = [global2local(NOW['velocity'], M), global2local(FUTURE4['velocity'], M), 
                                 global2local(FUTURE8['velocity'], M), global2local(FUTURE12['velocity'],M), 
-                                global2local(FUTURE16['velocity'], M), global2local(FUTURE20['velocity'], M)]
+                                global2local(FUTURE16['velocity'], M)]
 
         new_feature = Feature(global2local(root_velocity,M), Rfoot_location, Rfoot_velocity, Lfoot_location, 
                         Lfoot_velocity, trajectory_location, trajectory_direction, ANIM_INFO['index'])

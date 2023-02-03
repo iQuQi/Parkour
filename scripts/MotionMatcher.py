@@ -17,7 +17,7 @@ COMBINED_FILE_PATH = os.path.abspath('dataSet.npy')
 class MotionMatcher:
     motion = ''
     time = UPDATE_TIME
-    matched_frame_index = -1
+    matched_frame_index = 0
     firstPoseRotation = [0,0,0,0] # 초기 pose의 rotation
     firstPoseLocation = [0,0,0] # 초기 pose의 location
     firstNowLocation = [0,0,0] 
@@ -30,7 +30,8 @@ class MotionMatcher:
     tree = ''
     featureIndex = 0
      
-    def __init__(self):
+    def __init__(self, IDLE_INDEX):
+        self.matched_frame_index = IDLE_INDEX
         self.motion = 'idle'
         # 트리 생성해주기
         point_list = []
@@ -81,9 +82,11 @@ class MotionMatcher:
         #print('HEAD:', bone_struct['mixamorig2:LeftFoot'].tail)
 
         joint_names = bone_struct.keys()
-        
+        # isUpdated = False
+        nowAnimInfo = poses[self.matched_frame_index]['animInfo'][0]
+
         # 매칭 프레임 찾기
-        if self.time == UPDATE_TIME:
+        if self.time == UPDATE_TIME or self.matched_frame_index + 1 > nowAnimInfo['end']:
             # 쿼리벡터 넣어주기
             distance, findIndex = self.tree.query(query)
             print('이게 포인트', features[findIndex]['trajectoryLocation'])
@@ -96,9 +99,18 @@ class MotionMatcher:
             #     self.matched_frame_index = self.matched_frame_index+1
                 
             # else:
-            self.matched_frame_index = features[findIndex]['poseIndex']                
+            newPoseIndex = features[findIndex]['poseIndex']     
+            # newAnimInfo = poses[newPoseIndex]['animInfo'][0]
+            # if nowAnimInfo['name'] == newAnimInfo['name'] and self.matched_frame_index + 1 <= nowAnimInfo['end']:
+            #     print('=========동일한 애니메이션 계속 실행===========',)
+            #     self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
+            # else: 
+            #     self.matched_frame_index = newPoseIndex
+            #     isUpdated = True
+            
+            self.matched_frame_index = newPoseIndex
             self.featureIndex = findIndex
-
+            
             # # bruteforce
             # min = 2147483647
             # minIdx = -1
@@ -133,7 +145,7 @@ class MotionMatcher:
             jointLocation = poses[self.matched_frame_index]['joints'][joint]['location']
             # 힙 조인트 위치정보 업데이트                
             if joint == 'mixamorig2:Hips': 
-                if self.time == UPDATE_TIME: # update time 20까지는 괜찮음
+                if self.time == UPDATE_TIME: # update time 16까지는 괜찮음
                     self.firstPoseRotation = jointRotation # 초기 pose의 rotation
                     self.firstPoseLocation = jointLocation # 초기 pose의 location
                     # 현재 힙 정보 저장해두기
@@ -142,7 +154,7 @@ class MotionMatcher:
                     
                     bone_origin = mathutils.Quaternion(bone_struct[joint].rotation_quaternion).to_matrix()
                     bone_vector = bone_origin[0]+bone_origin[1]+bone_origin[2]
-                    
+
                     joint_origin = mathutils.Quaternion(jointRotation).to_matrix()
                     joint_vector = joint_origin[0]+joint_origin[1]+joint_origin[2]
 
@@ -163,7 +175,7 @@ class MotionMatcher:
                 bone_struct[joint].location = substractArray3(jointLocation, self.firstPoseLocation) # 수평방향 고정
                 bone_struct[joint].rotation_quaternion = jointRotation
 
-                for index in range(6): # 0~5까지
+                for index in range(5): # 0~4까지
                     featurePoint = bpy.data.objects['Feature'+ str(index+1)]
                     if self.matched_frame_index + index*4 <= poses[self.matched_frame_index]['animInfo'][0]['end']:
                         poseLocation = poses[self.matched_frame_index + index*4]['joints'][joint]['location']

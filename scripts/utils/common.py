@@ -9,7 +9,8 @@ X = 0
 Y = 1
 Z = 2
 UPDATE_TIME = 20
-IDLE_INDEX = 449
+GOAL = 0.8
+IDLE_INDEX = -1
 DEFAULT_EULER = [1.5708,0,0]
           
 upper_dir_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))

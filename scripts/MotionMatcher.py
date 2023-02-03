@@ -42,7 +42,7 @@ class MotionMatcher:
             for location in features[i]['trajectoryLocation']:
                 # point += [location[0]/100, location[1]/100, location[2]/100]
                 # point += [location[0], location[1], location[2]]
-                point += [location[0]/100, 0, location[2]/100]
+                point += [location[0]/100, location[1]/100, location[2]/100]
                 
                 # point += (np.array(location)*10).tolist()
                 # point += (np.array(location)).tolist()
@@ -142,8 +142,10 @@ class MotionMatcher:
                     
                     bone_origin = mathutils.Quaternion(bone_struct[joint].rotation_quaternion).to_matrix()
                     bone_vector = bone_origin[0]+bone_origin[1]+bone_origin[2]
+                    
                     joint_origin = mathutils.Quaternion(jointRotation).to_matrix()
                     joint_vector = joint_origin[0]+joint_origin[1]+joint_origin[2]
+
                     joint_xz = 0
                     bone_xz = 0
                     if joint_vector[0]>0:
@@ -156,23 +158,20 @@ class MotionMatcher:
                         bone_xz = np.arctan(bone_vector[2]/bone_vector[0]) + np.deg2rad(180)
 
                     self.radian_xz = joint_xz - bone_xz
-                    print('라디안',joint)
                     obj.rotation_euler.rotate(mathutils.Euler([0.0,0.0,-self.radian_xz],'XYZ'))
 
                 bone_struct[joint].location = substractArray3(jointLocation, self.firstPoseLocation) # 수평방향 고정
-                # bone_struct[joint].location[0] = self.firstPoseLocation[0]
-                # bone_struct[joint].location[1] = jointLocation[1] # 높이 고정
                 bone_struct[joint].rotation_quaternion = jointRotation
 
                 for index in range(6): # 0~5까지
+                    featurePoint = bpy.data.objects['Feature'+ str(index+1)]
                     if self.matched_frame_index + index*4 <= poses[self.matched_frame_index]['animInfo'][0]['end']:
-                        diffdiff = substractArray3(poses[self.matched_frame_index + index*4]['joints'][joint]['location'], self.firstPoseLocation)
-                        listlist = np.array(addArray3(obj.location, diffdiff))/100
-                        bpy.data.objects['Feature'+ str(index+1)].hide_viewport = False
-                        bpy.data.objects['Feature'+ str(index+1)].location = [listlist[0], (-1)*listlist[2], listlist[1]]
-                        bpy.data.objects['Feature'+ str(index+1)].location[2] = (-1/100)*jointLocation[1]
+                        poseLocation = poses[self.matched_frame_index + index*4]['joints'][joint]['location']
+                        diff = obj.rotation_euler.to_matrix() @ mathutils.Vector(substractArray3(poseLocation, self.firstPoseLocation))
+                        featurePoint.hide_viewport = False
+                        featurePoint.location = [diff[0]/100 + obj.location[0], diff[1]/100 + obj.location[1], 0]
                     else:
-                        bpy.data.objects['Feature'+ str(index+1)].hide_viewport = True
+                        featurePoint.hide_viewport = True
                 
             # 나머지 조인트 위치정보 업데이트
             else: 

@@ -126,8 +126,6 @@ def poseDB2featureDB():
             now_start_index = ANIM_INFO['start']
             now_end_index =  ANIM_INFO['end']
 
-        # if i < (now_start_index + 10) or i > (now_end_index - 20):
-        #     continue
         if i < (now_start_index) or i > (now_end_index - 20):
              continue
 
@@ -158,7 +156,6 @@ def poseDB2featureDB():
 
 
 
-        # z_w = np.array([frames[i]['zAxis'][0], (-1)*frames[i]['zAxis'][2], frames[i]['zAxis'][1]]) # z_w
         x_u = np.array(frames[i]['axes'][0])
         y_v = np.array(frames[i]['axes'][1])
         z_w = np.array(frames[i]['axes'][2]) # z_w

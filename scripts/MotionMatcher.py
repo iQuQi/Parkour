@@ -41,19 +41,9 @@ class MotionMatcher:
             # point = features[i]['footLocation']['left'] + features[i]['footLocation']['right'] # foot 추가
 
             for location in features[i]['trajectoryLocation']:
-                # point += [location[0]/100, location[1]/100, location[2]/100]
-                # point += [location[0], location[1], location[2]]
-                point += [location[0]/100, location[1]/100, location[2]/100]
-                
-                # point += (np.array(location)*10).tolist()
-                # point += (np.array(location)).tolist()
-
-            
+                point += [location[0]/100, location[1]/100, location[2]/100]       
             point_list.append(point)
-        
-           
-        # [([speed], [], [], []), (speed, [location]), ()]
-        # print('point_list : ', point_list)
+
         self.tree = spatial.KDTree(point_list)
 
 
@@ -82,7 +72,6 @@ class MotionMatcher:
         #print('HEAD:', bone_struct['mixamorig2:LeftFoot'].tail)
 
         joint_names = bone_struct.keys()
-        # isUpdated = False
         nowAnimInfo = poses[self.matched_frame_index]['animInfo'][0]
 
         # 매칭 프레임 찾기
@@ -111,7 +100,7 @@ class MotionMatcher:
             self.matched_frame_index = newPoseIndex
             self.featureIndex = findIndex
             
-            # # bruteforce
+            # TEST bruteforce
             # min = 2147483647
             # minIdx = -1
             # for idx, feature in enumerate(features):

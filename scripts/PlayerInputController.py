@@ -146,10 +146,10 @@ class ModalOperator(bpy.types.Operator):
 
         # 포즈 특징 채우기
         poseStructs = self.motionMatcher.getCurrentPose()
-        poseDBVelocity = poseStructs['mixamorig2:Hips']['velocity']
-        #speed = np.linalg.norm([poseDBVelocity[0]/100,poseDBVelocity[1]/100,poseDBVelocity[2]/100]) 
+        # poseDBVelocity = poseStructs['mixamorig2:Hips']['velocity']
+        # speed = np.linalg.norm([poseDBVelocity[0]/100,poseDBVelocity[1]/100,poseDBVelocity[2]/100]) 
         speed = 1
-        if speed == 0: speed = ZERO_VELOCITY 
+        # if speed == 0: speed = ZERO_VELOCITY 
         if self.KEY_MAP[RUN]: speed *= 2
         
         print('SPEED:', speed)
@@ -172,9 +172,6 @@ class ModalOperator(bpy.types.Operator):
        
         for index in range(10):
             updatePosition =  self.calculateFutureTrajectory(0.13)
-            # if index == 1:
-            #     printPoint.append([globalLocation[0], globalLocation[1],0])
-            #     trajectoryLocation.extend(self.nowLocation)
             if index % 2 != 0: 
                 diff = obj.rotation_euler.to_matrix() @ mathutils.Vector(updatePosition)
                 printPoint.append([diff[0] + globalLocation[0], diff[1] + globalLocation[1], 0])

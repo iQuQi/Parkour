@@ -37,19 +37,18 @@ class MotionMatcher:
         point_list = []
         for i in range(len(features)-1):
             #point = feature['rootSpeed'].copy()
-            point = []
-            # point = features[i]['footLocation']['left'] + features[i]['footLocation']['right'] # foot 추가
+            #point = []
+            point = features[i]['footLocation']['left'] + features[i]['footLocation']['right'] # foot 추가
 
             for location in features[i]['trajectoryLocation']:
-                point += [location[0]/100, location[1]/100, location[2]/100]       
+                #point += [location[0]/100, location[1]/100, location[2]/100]   
+                point += location 
             point_list.append(point)
+        
+        #print('POINT CREATE => ',point_list[1:5])   
+
 
         self.tree = spatial.KDTree(point_list)
-
-
-    def start():
-        print('START')
-       
 
     def __del__(self):
         print('MOTION matcher DEL')
@@ -65,7 +64,7 @@ class MotionMatcher:
         return features[self.featureIndex]
 
     def updateMatchedMotion(self, query, crouch, jump):
-        # print('Function CALL - UpdateMatchedMotion:   ', query)
+        print('Function CALL - UpdateMatchedMotion:   ', query)
         obj = bpy.context.object
 
         bone_struct = obj.pose.bones
@@ -77,10 +76,11 @@ class MotionMatcher:
         # 매칭 프레임 찾기
         if self.time == UPDATE_TIME or self.matched_frame_index + 1 > nowAnimInfo['end']:
             # 쿼리벡터 넣어주기
-            distance, findIndex = self.tree.query(query)
-            print('이게 포인트', features[findIndex]['trajectoryLocation'])
-            # print('쿼리...',query)
+            distance, findIndex = self.tree.query(query, k=5)
+            print('[선택포인트] ====> ',features[findIndex[0]]['footLocation']['left'], features[findIndex[0]]['footLocation']['right'], features[findIndex[0]]['trajectoryLocation'])
+            print('[현재쿼리] ====>',query)
 
+            print('후보리스트 ===>', distance, findIndex)
             # self.matched_frame_index = random.randint(1,728)
 
             # 이름이 같을 때
@@ -88,7 +88,7 @@ class MotionMatcher:
             #     self.matched_frame_index = self.matched_frame_index+1
                 
             # else:
-            newPoseIndex = features[findIndex]['poseIndex']     
+            newPoseIndex = features[findIndex[0]]['poseIndex']     
             # newAnimInfo = poses[newPoseIndex]['animInfo'][0]
             # if nowAnimInfo['name'] == newAnimInfo['name'] and self.matched_frame_index + 1 <= nowAnimInfo['end']:
             #     print('=========동일한 애니메이션 계속 실행===========',)
@@ -98,7 +98,7 @@ class MotionMatcher:
             #     isUpdated = True
             
             self.matched_frame_index = newPoseIndex
-            self.featureIndex = findIndex
+            self.featureIndex = findIndex[0]
             
             # TEST bruteforce
             # min = 2147483647

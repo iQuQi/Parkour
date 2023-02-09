@@ -8,11 +8,12 @@ KEY_CODE = {'Z': 6,'X': 7, 'C': 8,'V': 9, 'SPACE': 49, 'LEFT': 123, 'RIGHT': 124
 X = 0
 Y = 1
 Z = 2
-UPDATE_TIME = 20
+UPDATE_TIME = 16
 GOAL = 0.8
 IDLE_INDEX = -1
 DEFAULT_EULER = [1.5708,0,0]
-          
+WEIGHT  = 2
+    
 upper_dir_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 pose_path =  upper_dir_path + '/dataset/PoseDB.json'
@@ -84,6 +85,15 @@ def getRadian(x,y):
     radian = np.arccos(v)
     print('getANGLE:', np.inner(x, y),L2_norm(x),L2_norm(y), v)
     return radian
+    
+def normalizeMatrix(mean,std,M):
+    transposeM = np.transpose(M)
+    normalized = [(transposeM[0] - mean[0])/std[0],(transposeM[1]  - mean[1])/std[1], (transposeM[2]  - mean[2])/std[2]]
+
+    return np.transpose(normalized)
+
+def normalizeVector(mean,std,V):
+    return ((np.array(V)-mean) / std).tolist()
 
 
 def transformVectorFormat(vec):

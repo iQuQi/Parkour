@@ -7,7 +7,6 @@ import sys
 import json
 from mathutils import Vector
 import numpy as np 
-
 import scipy.stats as ss 
 
 HOME_FILE_PATH = os.path.abspath('homefile.blend')
@@ -16,6 +15,22 @@ RESOLUTION = (512, 512)
 X = 0
 Y = 1
 Z = 2
+WEIGHT  = 2
+L = 'location'
+V = 'velocity'
+T_L = 'tailLocation'
+HIP_KEY = 'mixamorig2:Hips' 
+RFOOT_KEY = 'mixamorig2:RightFoot'
+LFOOT_KEY = 'mixamorig2:LeftFoot'
+
+def normalizeMatrix(mean,std,M):
+    transposeM = np.transpose(M)
+    normalized = [(transposeM[0] - mean[0])/std[0],(transposeM[1]  - mean[1])/std[1], (transposeM[2]  - mean[2])/std[2]]
+
+    return np.transpose(normalized).tolist()
+
+def normalizeVector(mean,std,V):
+    return ((np.array(V)-mean) / std).tolist()
 
 def global2local(fir,M ):
     tmp = fir.copy()
@@ -69,119 +84,123 @@ def poseDB2featureDB():
         frames=json.load(f)
     print('Pose2Feature Count:', len(frames))
 
+    # 변수값 초기화
     features_npy = []
     features_json = []
-
     now_start_index = 0
     now_end_index = 0
-
-    # 표준화
-    HIP_KEY = 'mixamorig2:Hips' 
     frames_np = np.array(frames)
-    list_hips = {'location': [], 'velocity':[]}
-    list_feet = {'Rfoot':{'tailLocation':[], 'velocity':[]}, 'Lfoot':{'tailLocation':[], 'velocity':[]}}
+    local_hips = {L:[], V:[]}
+    local_RFoot = {T_L:[], V:[]}
+    local_Lfoot = {T_L:[], V:[]}
+    
+    # 속성(위치, 속도)에 맞게 분류해서 배열에 담아주기
     for i in range(len(frames_np)):
-        hip_frames = frames_np[i]['joints'][HIP_KEY]
-        list_hips['location'].append(np.array([hip_frames['location'][0]/100, hip_frames['location'][1]/100, hip_frames['location'][2]/100]))
-        list_hips['velocity'].append(frames_np[i]['joints'][HIP_KEY]['velocity'])
-        
-        list_feet['Rfoot']['tailLocation'].append(frames_np[i]['joints']['mixamorig2:RightFoot']['tailLocation'])
-        list_feet['Rfoot']['velocity'].append(frames_np[i]['joints']['mixamorig2:RightFoot']['velocity'])
-        list_feet['Lfoot']['tailLocation'].append(frames_np[i]['joints']['mixamorig2:LeftFoot']['tailLocation'])
-        list_feet['Lfoot']['velocity'].append(frames_np[i]['joints']['mixamorig2:LeftFoot']['velocity'])
-        
-    list_hips['location'] = ss.zscore(list_hips['location']).tolist()
-    list_hips['velocity'] = ss.zscore(list_hips['velocity']).tolist()
-    list_feet['Rfoot']['tailLocation'] = ss.zscore(list_feet['Rfoot']['tailLocation']).tolist()
-    list_feet['Rfoot']['velocity'] = ss.zscore(list_feet['Rfoot']['velocity']).tolist()
-    list_feet['Lfoot']['tailLocation'] = ss.zscore(list_feet['Lfoot']['tailLocation']).tolist()
-    list_feet['Lfoot']['velocity'] = ss.zscore(list_feet['Lfoot']['velocity']).tolist()
+        frame = frames_np[i]['joints']
 
-    mean={'hips':{'location':np.mean(list_hips['location']), 'velocity':np.mean(list_hips['velocity'])}, 
-        'Rfoot':{'tailLocation': np.mean(list_feet['Rfoot']['tailLocation']), 'velocity':np.mean(list_feet['Rfoot']['velocity'])},
-        'Lfoot':{'tailLocation': np.mean(list_feet['Lfoot']['tailLocation']), 'velocity':np.mean(list_feet['Lfoot']['velocity'])},
-    }
-    std={'hips':{'location':np.std(list_hips['location']), 'velocity':np.std(list_hips['velocity'])}, 
-        'Rfoot':{'tailLocation': np.std(list_feet['Rfoot']['tailLocation']), 'velocity':np.std(list_feet['Rfoot']['velocity'])},
-        'Lfoot':{'tailLocation': np.std(list_feet['Lfoot']['tailLocation']), 'velocity':np.std(list_feet['Lfoot']['velocity'])},
-    }
+        # 현재 프레임 매트릭스 정보
+        x_u = np.array(frames[i]['axes'][0])
+        y_v = np.array(frames[i]['axes'][1])
+        z_w = np.array(frames[i]['axes'][2]) # z_w
+        M = np.linalg.inv([[x_u[0], y_v[0], z_w[0], frame[HIP_KEY][L][0]],
+            [x_u[1], y_v[1], z_w[1],  frame[HIP_KEY][L][1]],
+            [x_u[2],  y_v[2], z_w[2], frame[HIP_KEY][L][2]],
+            [0, 0, 0, 1]])
+            
+        # 아래 170라인 참고
+        # local_hips[L].append(global2local(frame[HIP_KEY][L],M))
+        # local_hips[V].append(global2local(frame[HIP_KEY][V],M))
+        local_RFoot[T_L].append(frame[RFOOT_KEY][T_L],M)
+        local_Lfoot[T_L].append(frame[LFOOT_KEY][T_L],M)
+        local_RFoot[V].append(frame[RFOOT_KEY][V],M)
+        local_Lfoot[V].append(frame[LFOOT_KEY][V],M)
 
-    standard_hips = []
-    standard_feet = []
+        
+    # 각 열의 평균과 표준편차 구하기 (axis = 0) => x는 x끼리 y는 y끼리..
+    hipLocationMean = np.mean(local_hips[L], axis=0).tolist() # 보류
+    hipLocationStd = np.std(local_hips[L], axis=0).tolist() # 보류
+    RfootLocationMean = np.mean(local_RFoot[T_L], axis=0).tolist()
+    LfootLocationMean = np.mean(local_Lfoot[T_L], axis=0).tolist()
+    RfootLocationStd = np.std(local_RFoot[T_L], axis=0).tolist()
+    LfootLocationStd = np.std(local_Lfoot[T_L], axis=0).tolist()
+
+    mean = {'hip': hipLocationMean, 'Rfoot': RfootLocationMean, 'Lfoot': LfootLocationMean}
+    std = {'hip': hipLocationStd, 'Rfoot': RfootLocationStd, 'Lfoot': LfootLocationStd}
+
+    # 표준화 작업 -> HIP을 여기서 안해주는 이유 아래 170라인 참고
+    normalizedRfootLocation = normalizeMatrix(RfootLocationMean, RfootLocationStd, local_RFoot[T_L])
+    normalizedLfootLocation = normalizeMatrix(LfootLocationMean, LfootLocationStd, local_Lfoot[T_L])
+
+    # TODO location이 잘 작동하면 속도도 적용해보기#############
+    local_RFoot[V] = ss.zscore(local_RFoot[V]).tolist()
+    local_Lfoot[V] = ss.zscore(local_Lfoot[V]).tolist()
+
+    # 표준화된 결과값을 딕셔너리로 저장
+    norm_Rfoot = []
+    norm_Lfoot = []
     for i in range(len(frames_np)):
-        standard_hips.append({'location': list_hips['location'][i], 'velocity':list_hips['velocity'][i]})
-        standard_feet.append({'Rfoot':{'tailLocation':list_feet['Rfoot']['tailLocation'][i], 'velocity':list_feet['Rfoot']['velocity'][i]}, 
-                                'Lfoot':{'tailLocation':list_feet['Lfoot']['tailLocation'][i], 'velocity':list_feet['Lfoot']['velocity'][i]}})
+        norm_Rfoot.append({T_L: normalizedRfootLocation[i], V:local_RFoot[V][i]}) 
+        norm_Lfoot.append({T_L: normalizedLfootLocation[i], V:local_Lfoot[V][i]})
 
     for i in range(len(frames)):
-        FRAME = frames[i]['joints']
+        #FRAME = frames[i]['joints']
         ANIM_INFO = frames[i]['animInfo'][0]
-        
-        print('anim info',ANIM_INFO)
+        print(ANIM_INFO)
 
+        # 루프의 첫 시작시 설정
         if i == 0:
             now_end_index = ANIM_INFO['end']
 
+        # 새 애니메이션의 정보로  현재 end, start 인덱스 업데이트
         if ANIM_INFO['start'] != now_start_index:
             now_start_index = ANIM_INFO['start']
             now_end_index =  ANIM_INFO['end']
 
-        if i < (now_start_index) or i > (now_end_index - 20):
+        # 뒤에 16개는 날림
+        if i < (now_start_index) or i > (now_end_index - 16):
              continue
 
         # 포즈 특징 채워주기
-        root_velocity = standard_hips[i]['velocity'] 
+        root_velocity = local_hips[V][i] # TODO 표준화 필요 => 보류
+        Rfoot_location = norm_Rfoot[i][T_L]
+        Rfoot_velocity = norm_Rfoot[i][V]
+        Lfoot_location = norm_Lfoot[i][T_L]
+        Lfoot_velocity = norm_Lfoot[i][V]
 
-        Rfoot_location = standard_feet[i]['Rfoot']['tailLocation']
-        Rfoot_velocity = standard_feet[i]['Rfoot']['velocity']
+        # TODO 궤적 특징 채워주기 
+        # 기존의 방식: 궤적 위치를 전체 위치 데이터(포즈DB 전체)의 평균과 표준편차를 이용해서 표준화 후 로컬 변환 
+        #           => 표준화 된 값을 global2local해서 제대로 된 값이 나올리가 없음 
+        # 대안: 로컬 변환을 먼저 한 후 궤적 위치 표준화 해주기 => 로컬변환을 하기 위해서는 i번째 M가 필요, 즉 for문안에서 표준화를 해야함
+        #      => 특정 프레임에서의 캐릭터 위치에 대한 미래 궤적의 상대위치를 구해놓은 것이므로, 기존의 방식처럼 전체 궤적 위치 데이터의 평균과 표준편차를 사용하지 못함
+        #      => i, i+4, ... i+16 이렇게 5개 점에 대한 평균과 표준편차를 사용해야함 - 여기까지는 문제 x
+        #      => FeatureDB는 잘 만들어짐. 다만 Input으로 쿼리를 만들 때 문제 발생
+        #      => 받아온 인풋을 표준화할 때는 어떤 평균과 표준편차를 사용해야할까 ?
+        #        1) 현재 시점에서의 Feature의 궤적 평균과 표준편차를 사용 -> 모든 포즈 프레임이 대응되는 피쳐 프레임 정보를 갖지 않음(16개 사용x라서)
+        #        2) ... 잘모르겠움ㅠㅠㅠ
+        trajectory_location = []
+        for cnt in range(5):
+            trajectory_location.append(local_hips[L][i+4*cnt])
 
-        Lfoot_location = standard_feet[i]['Lfoot']['tailLocation']
-        Lfoot_velocity = standard_feet[i]['Lfoot']['velocity']
+        # 궤적 정보 채우기
+        # TODO Mean과 Std 값 고치기 -> 위 문제 해결해서
+        norm_trajectory_location = normalizeMatrix(hipLocationMean, hipLocationStd, trajectory_location)
+        
+        # TODO 보류
+        trajectory_direction = []
 
+        # 피쳐 객체 생성    
+        new_feature = Feature(root_velocity, Rfoot_location, Rfoot_velocity, Lfoot_location, 
+                        Lfoot_velocity, norm_trajectory_location, trajectory_direction, ANIM_INFO['index'])
 
-        # 궤적 특징 채워주기
-       
-        # NOW = standard_hips[i]
-        # FUTURE4 = standard_hips[i+4]
-        # FUTURE8 = standard_hips[i+8]
-        # FUTURE12 = standard_hips[i+12]
-        # FUTURE16 = standard_hips[i+16]
-        # FUTURE20 = standard_hips[i+20]
-
-        NOW = frames[i]['joints'][HIP_KEY]
-        FUTURE4 = frames[i+4]['joints'][HIP_KEY]
-        FUTURE8 = frames[i+8]['joints'][HIP_KEY]
-        FUTURE12 = frames[i+12]['joints'][HIP_KEY]
-        FUTURE16 = frames[i+16]['joints'][HIP_KEY]
-
-
-
-        x_u = np.array(frames[i]['axes'][0])
-        y_v = np.array(frames[i]['axes'][1])
-        z_w = np.array(frames[i]['axes'][2]) # z_w
-        M = [[x_u[0], y_v[0], z_w[0], NOW['location'][0]],
-            [x_u[1], y_v[1], z_w[1],  NOW['location'][1]],
-            [x_u[2],  y_v[2], z_w[2], NOW['location'][2]],
-            [0, 0, 0, 1]]
-
-        M = np.linalg.inv(M)
-        trajectory_location =[
-                             global2local(NOW['location'], M),global2local(FUTURE4['location'], M),
-                             global2local(FUTURE8['location'], M),global2local(FUTURE12['location'], M),
-                             global2local(FUTURE16['location'], M)
-                             ]
-        trajectory_direction = [global2local(NOW['velocity'], M), global2local(FUTURE4['velocity'], M), 
-                                global2local(FUTURE8['velocity'], M), global2local(FUTURE12['velocity'],M), 
-                                global2local(FUTURE16['velocity'], M)]
-
-        new_feature = Feature(global2local(root_velocity,M), Rfoot_location, Rfoot_velocity, Lfoot_location, 
-                        Lfoot_velocity, trajectory_location, trajectory_direction, ANIM_INFO['index'])
 
         # 각 파일에 들어갈 피쳐 배열에 추가
         features_npy.append(np.array(new_feature.__dict__))
         features_json.append(new_feature.__dict__)
-        print('featureIndex', len(features_json)-1)
+        print('피쳐인덱스:',len(features_json))
     features_json.append({'mean':mean,'std':std})
+
+
+
     # npy, json 파일로 저장하기
     np.save(COMBINED_FILE_PATH + 'featureDB.npy', features_npy)
     save_path = os.path.join(COMBINED_FILE_PATH,'featureDB.json')

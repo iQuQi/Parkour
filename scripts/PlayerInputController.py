@@ -27,32 +27,19 @@ class QueryVector:
         # 속도
         self.rootSpeed = rootSpeed
 
-        # 루트의 미래+과거 궤적  ====> 과거 -> 현재 -> 미래 (4개)
-        # TODO 정사영 시켜야 함
-        self.trajectoryLocation = trajectoryLocation # [-10, -5, 0, 5, 10, 20]
+        self.trajectoryLocation = trajectoryLocation 
         self.trajectoryDirection = trajectoryDirection
 
         self.footLocation = {'left': LfootLocation, 'right': RfootLocation}
         self.footSpeed =  {'left': LfootSpeed, 'right': RfootSpeed}
-
-        # TODO: 손 정보 추가
-    
-    def toString(self):
-        # print('--- 쿼리 벡터 정보 출력하기 ---')
-        # print('rootSpeed:', self.rootSpeed)
-        # print('trajectoryLocation:', self.trajectoryLocation)
-        # print('trajectoryDirection:', self.trajectoryDirection)
-        # print('footLocation:', self.footLocation)
-        # print('footSpeed:', self.footSpeed)
-        # print('-------------------------')
-        print()
 
 
 class ModalOperator(bpy.types.Operator):
     bl_idname = "object.modal_operator"
     bl_label = "Simple Modal Operator"
 
-    KEY_MAP = {'UP_ARROW': False, 'DOWN_ARROW': False, 'LEFT_ARROW': False, 'RIGHT_ARROW': False, CROUCH: False, JUMP: False, RUN: False }
+    KEY_MAP = {'UP_ARROW': False, 'DOWN_ARROW': False, 'LEFT_ARROW': False, 'RIGHT_ARROW': False, 
+                CROUCH: False, JUMP: False, RUN: False }
 
     # 지수 곡선 인자
     nowLocation =[0,0,0] 
@@ -99,13 +86,11 @@ class ModalOperator(bpy.types.Operator):
         bone_struct = obj.pose.bones
         joint_names = bone_struct.keys()
 
-        print('END INIT -> ', self.init_pose)
+        #print('END INIT -> ', self.init_pose)
         if self.init_pose != -1:
             for joint in joint_names:
-                jointRotation = poses[self.init_pose]['joints'][joint]['rotation']
-                jointLocation = poses[self.init_pose]['joints'][joint]['location']
-                bone_struct[joint].location = jointLocation            
-                bone_struct[joint].rotation_quaternion = jointRotation
+                bone_struct[joint].location = poses[self.init_pose]['joints'][joint]['location']            
+                bone_struct[joint].rotation_quaternion = poses[self.init_pose]['joints'][joint]['rotation']
                 obj.location = [0,0,0]
                 obj.rotation_euler = DEFAULT_EULER
 
@@ -125,6 +110,8 @@ class ModalOperator(bpy.types.Operator):
             input_direction[X] += GOAL
         if self.KEY_MAP['RIGHT_ARROW']:
             input_direction[X] += (-1*GOAL) 
+
+        # RUN 상태 진입
         if self.KEY_MAP[RUN]:
             input_direction *= 2.5
         
@@ -152,14 +139,16 @@ class ModalOperator(bpy.types.Operator):
 
         # 포즈 특징 채우기
         poseStructs = self.motionMatcher.getCurrentPose()
-        speed = 1
-        if self.KEY_MAP[RUN]: speed *= 2
+
+        # Run상태 체크
+        if self.KEY_MAP[RUN]: speed = 2
+        else: speed = 1
             
         rootVelocity = speed*bone_struct['mixamorig2:Hips'].z_axis
         RfootLocation = poseStructs['mixamorig2:RightFoot']['tailLocation']
-        # TODO RfootVelocity= poseStructs['mixamorig2:RightFoot']['velocity'] 속도는 우선 보류
+        #RfootVelocity= poseStructs['mixamorig2:RightFoot']['velocity'] 속도는 우선 보류
         LfootLocation = poseStructs['mixamorig2:LeftFoot']['tailLocation']
-        # TODO LfootVelocity= poseStructs['mixamorig2:LeftFoot']['velocity']
+        #LfootVelocity= poseStructs['mixamorig2:LeftFoot']['velocity'] 속도는 우선 보류
 
 
         #스프링 댐퍼 변수값 초기화
@@ -170,23 +159,22 @@ class ModalOperator(bpy.types.Operator):
         #댐퍼 함수를 통해 궤적 예측 포인트 생성
         printPoint = []
         trajectoryLocation = []
-        #TODO trajectoryDirection = []
+        #trajectoryDirection = []
+
         for index in range(10): # 최종적으로는 점 5개 생성
             updatePosition =  self.calculateFutureTrajectory(0.13)
             if index % 2 != 0: 
                 diff = obj.rotation_euler.to_matrix() @ mathutils.Vector(updatePosition)
                 printPoint.append([diff[0] + globalLocation[0], diff[1] + globalLocation[1], 0])
-
                 trajectoryLocation.append(updatePosition)
-                #TODO trajectoryDirection.extend(substractArray3(updatePosition,self.nowLocation))
+                #trajectoryDirection.extend(substractArray3(updatePosition,self.nowLocation))
                 self.desiredLocation = self.nowLocation + input_direction
-
             self.nowLocation = updatePosition
         
-        # 표준화 작업을 위해 기존 데이터의 평균, 표준편차 값을 이용하기
-        normalizedTrajectory = normalizeMatrix(features[-1]['mean']['hip'], features[-1]['std']['hip'], trajectoryLocation).flatten().tolist()
-        print('NORMALIZE HIP=>', features[-1]['mean']['hip'],features[-1]['std']['hip'],trajectoryLocation)
-        
+        # TODO 표준화 작업을 위해 기존 데이터의 평균, 표준편차 값을 이용하기 => 어떤 평균과 표준편차를 사용할 지 고민하기(궤적)
+        tmpHipMean = [0,0,0]
+        tmpHipStd = [1,1,1]
+        normalizedTrajectory = normalizeMatrix(tmpHipMean, tmpHipStd, trajectoryLocation).flatten().tolist()
         normalizedLFoot = normalizeMatrix(features[-1]['mean']['Lfoot'], features[-1]['std']['Lfoot'], LfootLocation).tolist()
         normalizedRFoot = normalizeMatrix(features[-1]['mean']['Rfoot'], features[-1]['std']['Rfoot'], RfootLocation).tolist()
 

@@ -149,12 +149,10 @@ def fbx2PoseDB():
                 x_u = out_dict['axes'][0]
                 y_v = out_dict['axes'][1]
                 z_w = out_dict['axes'][2] # z_w
-                M = [[x_u[0], y_v[0], z_w[0], location[0]],
+                M = np.linalg.inv([[x_u[0], y_v[0], z_w[0], location[0]],
                     [x_u[1], y_v[1], z_w[1],  location[1]],
                     [x_u[2],  y_v[2], z_w[2], location[2]],
-                    [0, 0, 0, 1]]
-
-                M = np.linalg.inv(M)
+                    [0, 0, 0, 1]])
 
                 # 새로운 joint 추가
                 joint = Joint(location, rotation, angular_velocity, velocity, global2local(tail_location,M))
@@ -242,7 +240,7 @@ if __name__ == '__main__':
     combineFiles()
 
     # TEST 2 최종 파일출력
-    print('TEST 2 ====================== Combined Data file') 
+    print('COMPLETE ====================== Combined Data file') 
     frames=np.load(COMBINED_FILE_PATH  + 'PoseDB.npy' , allow_pickle=True)
     print('포즈DB 최종 개수-npy:', len(frames))
 

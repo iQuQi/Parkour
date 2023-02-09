@@ -58,8 +58,6 @@ class Feature:
         self.footSpeed =  {'left': Lfoot_speed, 'right': Rfoot_speed}
 
         self.poseIndex = index
-
-        # TODO: 손 정보 추가
     
 #Source directory where .fbx exist
 SRC_DATA_DIR ='regular'
@@ -90,48 +88,34 @@ def poseDB2featureDB():
     now_start_index = 0
     now_end_index = 0
     frames_np = np.array(frames)
-    local_hips = {L:[], V:[]}
     local_RFoot = {T_L:[], V:[]}
     local_Lfoot = {T_L:[], V:[]}
     
     # 속성(위치, 속도)에 맞게 분류해서 배열에 담아주기
     for i in range(len(frames_np)):
         frame = frames_np[i]['joints']
-
-        # 현재 프레임 매트릭스 정보
-        x_u = np.array(frames[i]['axes'][0])
-        y_v = np.array(frames[i]['axes'][1])
-        z_w = np.array(frames[i]['axes'][2]) # z_w
-        M = np.linalg.inv([[x_u[0], y_v[0], z_w[0], frame[HIP_KEY][L][0]],
-            [x_u[1], y_v[1], z_w[1],  frame[HIP_KEY][L][1]],
-            [x_u[2],  y_v[2], z_w[2], frame[HIP_KEY][L][2]],
-            [0, 0, 0, 1]])
-            
-        # 아래 170라인 참고
-        # local_hips[L].append(global2local(frame[HIP_KEY][L],M))
-        # local_hips[V].append(global2local(frame[HIP_KEY][V],M))
-        local_RFoot[T_L].append(frame[RFOOT_KEY][T_L],M)
-        local_Lfoot[T_L].append(frame[LFOOT_KEY][T_L],M)
-        local_RFoot[V].append(frame[RFOOT_KEY][V],M)
-        local_Lfoot[V].append(frame[LFOOT_KEY][V],M)
+        local_RFoot[T_L].append(frame[RFOOT_KEY][T_L])
+        local_Lfoot[T_L].append(frame[LFOOT_KEY][T_L])
+        local_RFoot[V].append(frame[RFOOT_KEY][V])
+        local_Lfoot[V].append(frame[LFOOT_KEY][V])
 
         
     # 각 열의 평균과 표준편차 구하기 (axis = 0) => x는 x끼리 y는 y끼리..
-    hipLocationMean = np.mean(local_hips[L], axis=0).tolist() # 보류
-    hipLocationStd = np.std(local_hips[L], axis=0).tolist() # 보류
+    # hipLocationMean = np.mean(local_hips[L], axis=0).tolist() # 보류
+    # hipLocationStd = np.std(local_hips[L], axis=0).tolist() # 보류
     RfootLocationMean = np.mean(local_RFoot[T_L], axis=0).tolist()
     LfootLocationMean = np.mean(local_Lfoot[T_L], axis=0).tolist()
     RfootLocationStd = np.std(local_RFoot[T_L], axis=0).tolist()
     LfootLocationStd = np.std(local_Lfoot[T_L], axis=0).tolist()
 
-    mean = {'hip': hipLocationMean, 'Rfoot': RfootLocationMean, 'Lfoot': LfootLocationMean}
-    std = {'hip': hipLocationStd, 'Rfoot': RfootLocationStd, 'Lfoot': LfootLocationStd}
+    mean = {'hip': [], 'Rfoot': RfootLocationMean, 'Lfoot': LfootLocationMean}
+    std = {'hip': [], 'Rfoot': RfootLocationStd, 'Lfoot': LfootLocationStd}
 
     # 표준화 작업 -> HIP을 여기서 안해주는 이유 아래 170라인 참고
     normalizedRfootLocation = normalizeMatrix(RfootLocationMean, RfootLocationStd, local_RFoot[T_L])
     normalizedLfootLocation = normalizeMatrix(LfootLocationMean, LfootLocationStd, local_Lfoot[T_L])
 
-    # TODO location이 잘 작동하면 속도도 적용해보기#############
+    # location이 잘 작동하면 속도도 적용해보기 -> 현재 속도 보류
     local_RFoot[V] = ss.zscore(local_RFoot[V]).tolist()
     local_Lfoot[V] = ss.zscore(local_Lfoot[V]).tolist()
 
@@ -160,8 +144,9 @@ def poseDB2featureDB():
         if i < (now_start_index) or i > (now_end_index - 16):
              continue
 
+
         # 포즈 특징 채워주기
-        root_velocity = local_hips[V][i] # TODO 표준화 필요 => 보류
+        root_velocity = frames_np[i]['joints'][HIP_KEY][V] # TODO 표준화 필요 => 보류
         Rfoot_location = norm_Rfoot[i][T_L]
         Rfoot_velocity = norm_Rfoot[i][V]
         Lfoot_location = norm_Lfoot[i][T_L]
@@ -184,19 +169,31 @@ def poseDB2featureDB():
         #         5) 지현이가 해결할 수 있을 것이다..! 
         #         6) 교수니무ㅠㅠ
 
-        trajectory_location = []
-        for cnt in range(5):
-            trajectory_location.append(local_hips[L][i+4*cnt])
+        # 현재 프레임 매트릭스 정보 
+        x_u = np.array(frames[i]['axes'][0])
+        y_v = np.array(frames[i]['axes'][1])
+        z_w = np.array(frames[i]['axes'][2]) # z_w
+        M = np.linalg.inv([[x_u[0], y_v[0], z_w[0], frame[HIP_KEY][L][0]],
+            [x_u[1], y_v[1], z_w[1],  frame[HIP_KEY][L][1]],
+            [x_u[2],  y_v[2], z_w[2], frame[HIP_KEY][L][2]],
+            [0, 0, 0, 1]])
 
-        # 궤적 정보 채우기
-        # TODO Mean과 Std 값 고치기 -> 위 문제 해결한 후에!
-        norm_trajectory_location = normalizeMatrix(hipLocationMean, hipLocationStd, trajectory_location)
-        
-        # TODO 보류
+        trajectory_location = []
         trajectory_direction = []
 
+        for cnt in range(5):
+            trajectory_location.append(global2local(frames_np[i+4*cnt]['joints'][HIP_KEY][L], M))
+            trajectory_direction.append(global2local(frames_np[i+4*cnt]['joints'][HIP_KEY][V], M))
+
+        # 궤적 정보 채우기
+        # TODO Mean과 Std 값 고치기 -> 위 문제 해결해서 어떤 평균과 표준편차를 사용할 지 선택!
+        hipLocationMean =  np.mean(trajectory_location, axis=0).tolist()
+        hipLocationStd = np.std(trajectory_location, axis=0).tolist()
+        norm_trajectory_location = normalizeMatrix(hipLocationMean, hipLocationStd, trajectory_location)
+        # norm_trajectory_direction => 보류
+    
         # 피쳐 객체 생성    
-        new_feature = Feature(root_velocity, Rfoot_location, Rfoot_velocity, Lfoot_location, 
+        new_feature = Feature(global2local(root_velocity, M), Rfoot_location, Rfoot_velocity, Lfoot_location, 
                         Lfoot_velocity, norm_trajectory_location, trajectory_direction, ANIM_INFO['index'])
 
 
@@ -219,7 +216,7 @@ if __name__ == '__main__':
     poseDB2featureDB()  
 
     # TEST 2 최종 파일출력
-    print('TEST 2 ====================== featureDB Data file') 
+    print('COMPLETE ====================== featureDB Data file') 
     frames=np.load(COMBINED_FILE_PATH  + 'featureDB.npy' , allow_pickle=True)
     print('피쳐DB 최종 개수:', len(frames))
     # for i in range(len(frames)):

@@ -111,7 +111,7 @@ def poseDB2featureDB():
     mean = {'hip': [], 'Rfoot': RfootLocationMean, 'Lfoot': LfootLocationMean}
     std = {'hip': [], 'Rfoot': RfootLocationStd, 'Lfoot': LfootLocationStd}
 
-    # 표준화 작업 -> HIP을 여기서 안해주는 이유 아래 170라인 참고
+    # 표준화 작업 -> HIP을 여기서 안해주는 이유 아래 todo 참고
     normalizedRfootLocation = normalizeMatrix(RfootLocationMean, RfootLocationStd, local_RFoot[T_L])
     normalizedLfootLocation = normalizeMatrix(LfootLocationMean, LfootLocationStd, local_Lfoot[T_L])
 
@@ -164,10 +164,9 @@ def poseDB2featureDB():
         #      => 받아온 인풋을 표준화할 때는 어떤 평균과 표준편차를 사용해야할까 (선택)
         #         1) 현재 시점에서의 Feature의 궤적 평균과 표준편차를 사용한다 -> 모든 포즈 프레임이 대응되는 피쳐 프레임 정보를 갖지 않음(16개 사용x라서)
         #         2) 기존의 방식 대로 전체 데이터의 평균과 표준편차를 활용할 수 있는 방법을 찾아본다 -> 표준화 후에 로컬 변환을 했을 때도 문제가 없도록 코드를 짜야함
-        #         3) 5개점의 평균과 표준편차를 모두 모아서 다시 평균을 내고, 그 값을 사용한다 -> 설..마..
-        #         4) 애초에 인풋을 표준화하려는 생각이 글렀다?..
-        #         5) 지현이가 해결할 수 있을 것이다..! 
-        #         6) 교수니무ㅠㅠ
+        #         3) 5개점의 평균과 표준편차를 모두 모아서 다시 평균을 내고, 그 값을 사용한다 -> 설..마
+        #         4) 애초에 인풋을 표준화하려는 생각이 틀렸다?
+        #         5) 그냥 표준화 방법을 버리고 가중치 방식을 사용하자
 
         # 현재 프레임 매트릭스 정보 
         x_u = np.array(frames[i]['axes'][0])

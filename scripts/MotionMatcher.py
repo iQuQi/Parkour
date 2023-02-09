@@ -83,7 +83,7 @@ class MotionMatcher:
             print('후보리스트 ===>', distance, findIndex)
             # self.matched_frame_index = random.randint(1,728)
 
-            # 이름이 같을 때
+            # TODO 이름이 같을 때 그 애니메이션 계속 실행
             # if poses[self.matched_frame_index]['animInfo'][0]['index']<poses[self.matched_frame_index]['animInfo'][0]['end']-1 and poses[features[findIndex]['poseIndex']]['animInfo'][0]['name']==poses[self.matched_frame_index]['animInfo'][0]['name']:
             #     self.matched_frame_index = self.matched_frame_index+1
                 

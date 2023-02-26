@@ -128,8 +128,10 @@ def poseDB2featureDB():
 
         # if i < (now_start_index + 10) or i > (now_end_index - 20):
         #     continue
-        if i < (now_start_index) or i > (now_end_index - 20):
-             continue
+
+        # 이게 진짜
+        if i < (now_start_index) or i > (now_end_index - 16):
+            continue
 
         # 포즈 특징 채워주기
         root_velocity = standard_hips[i]['velocity'] 
@@ -139,6 +141,9 @@ def poseDB2featureDB():
 
         Lfoot_location = standard_feet[i]['Lfoot']['tailLocation']
         Lfoot_velocity = standard_feet[i]['Lfoot']['velocity']
+
+        print('속도가 맞는지 확인해보자')
+        print(Rfoot_velocity, Lfoot_velocity)
 
 
         # 궤적 특징 채워주기
@@ -155,6 +160,21 @@ def poseDB2featureDB():
         FUTURE8 = frames[i+8]['joints'][HIP_KEY]
         FUTURE12 = frames[i+12]['joints'][HIP_KEY]
         FUTURE16 = frames[i+16]['joints'][HIP_KEY]
+
+        # if i < (now_start_index):
+        #     continue
+        # elif i > (now_end_index - 16):
+        #     NOW = frames[i-16]['joints'][HIP_KEY]
+        #     FUTURE4 = frames[i-12]['joints'][HIP_KEY]
+        #     FUTURE8 = frames[i-8]['joints'][HIP_KEY]
+        #     FUTURE12 = frames[i-4]['joints'][HIP_KEY]
+        #     FUTURE16 = frames[i]['joints'][HIP_KEY]
+        # else:
+        #     NOW = frames[i]['joints'][HIP_KEY]
+        #     FUTURE4 = frames[i+4]['joints'][HIP_KEY]
+        #     FUTURE8 = frames[i+8]['joints'][HIP_KEY]
+        #     FUTURE12 = frames[i+12]['joints'][HIP_KEY]
+        #     FUTURE16 = frames[i+16]['joints'][HIP_KEY]
 
 
 

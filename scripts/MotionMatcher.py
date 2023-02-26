@@ -38,7 +38,8 @@ class MotionMatcher:
         for i in range(len(features)-1):
             #point = feature['rootSpeed'].copy()
             point = []
-            # point = features[i]['footLocation']['left'] + features[i]['footLocation']['right'] # foot 추가
+            # point += features[i]['footSpeed']['left'] + features[i]['footSpeed']['right'] # foot 추가
+            # point += features[i]['footLocation']['left'] + features[i]['footLocation']['right'] # foot 추가
 
             for location in features[i]['trajectoryLocation']:
                 # point += [location[0]/100, location[1]/100, location[2]/100]
@@ -48,7 +49,6 @@ class MotionMatcher:
                 # point += (np.array(location)*10).tolist()
                 # point += (np.array(location)).tolist()
 
-            
             point_list.append(point)
         
            
@@ -100,16 +100,24 @@ class MotionMatcher:
                 
             # else:
             newPoseIndex = features[findIndex]['poseIndex']     
-            # newAnimInfo = poses[newPoseIndex]['animInfo'][0]
-            # if nowAnimInfo['name'] == newAnimInfo['name'] and self.matched_frame_index + 1 <= nowAnimInfo['end']:
-            #     print('=========동일한 애니메이션 계속 실행===========',)
-            #     self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
-            # else: 
-            #     self.matched_frame_index = newPoseIndex
-            #     isUpdated = True
+            newAnimInfo = poses[newPoseIndex]['animInfo'][0]
+            if nowAnimInfo['name'] == newAnimInfo['name']:
+                if self.matched_frame_index + 1 <= nowAnimInfo['end']:
+                    print('=========동일한 애니메이션 계속 실행===========',)
+                    self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
+                    self.featureIndex = self.matched_frame_index
+                else:
+                    print('=========동일한 애니메이션 처음부터 실행===========',)
+                    self.matched_frame_index =  nowAnimInfo['start']
+                    self.featureIndex = self.matched_frame_index
+        
+            else: 
+                self.matched_frame_index = newPoseIndex
+                self.featureIndex = findIndex
+                # isUpdated = True
             
-            self.matched_frame_index = newPoseIndex
-            self.featureIndex = findIndex
+            # self.matched_frame_index = newPoseIndex
+            # self.featureIndex = findIndex
             
             # # bruteforce
             # min = 2147483647
@@ -137,7 +145,7 @@ class MotionMatcher:
             self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
 
 
-        print('애니메이션 이름 : ', poses[self.matched_frame_index]['animInfo'][0]['name'])
+        print('애니메이션 이름 : ', poses[self.matched_frame_index]['animInfo'][0]['name'], poses[self.matched_frame_index]['animInfo'][0]['index'])
         # 해당하는 프레임으로 애니메이션 교체 & 재생 
         for joint in joint_names:
             # 조인트 회전 정보 업데이트
@@ -145,12 +153,13 @@ class MotionMatcher:
             jointLocation = poses[self.matched_frame_index]['joints'][joint]['location']
             # 힙 조인트 위치정보 업데이트                
             if joint == 'mixamorig2:Hips': 
-                if self.time == UPDATE_TIME: # update time 16까지는 괜찮음
+                if self.time == UPDATE_TIME or self.matched_frame_index==nowAnimInfo['start']: # update time 16까지는 괜찮음
+                    print('여기 들어왔니?')
                     self.firstPoseRotation = jointRotation # 초기 pose의 rotation
                     self.firstPoseLocation = jointLocation # 초기 pose의 location
                     # 현재 힙 정보 저장해두기
                     obj.location = addArray3(obj.location,obj.rotation_euler.to_matrix()@mathutils.Vector([bone_struct[joint].location[0]/100,bone_struct[joint].location[1]/100,bone_struct[joint].location[2]/100]))
-                    obj.location[2] = 0
+                    # obj.location[2] = 0
                     
                     bone_origin = mathutils.Quaternion(bone_struct[joint].rotation_quaternion).to_matrix()
                     bone_vector = bone_origin[0]+bone_origin[1]+bone_origin[2]

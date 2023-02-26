@@ -41,15 +41,14 @@ class MotionMatcher:
             #point = feature['rootSpeed'].copy()
             point = []
             # point += features[i]['footSpeed']['left'] + features[i]['footSpeed']['right'] # foot 추가
-            # point += features[i]['footLocation']['left'] + features[i]['footLocation']['right'] # foot 추가
+            point += features[i]['footLocation']['left'] + features[i]['footLocation']['right'] # foot 추가
 
             for location in features[i]['trajectoryLocation']:
                 # point += [location[0]/100, location[1]/100, location[2]/100]
-                # point += [location[0], location[1], location[2]]
-                point += [location[0]/100, location[1]/100, location[2]/100]
                 
-                # point += (np.array(location)*10).tolist()
-                # point += (np.array(location)).tolist()
+                # point += [location[0]/100, location[1]/100, location[2]/100]
+                
+                point += (np.array(location)/20).tolist()
 
             point_list.append(point)
         
@@ -92,6 +91,7 @@ class MotionMatcher:
             # 쿼리벡터 넣어주기
             distance, findIndex = self.tree.query(query)
             print('이게 포인트', features[findIndex]['trajectoryLocation'])
+            print('트리에서 뽑은 값 : ', poses[self.matched_frame_index]['joints']['mixamorig2:LeftFoot']['tailLocation'], poses[self.matched_frame_index]['joints']['mixamorig2:RightFoot']['tailLocation'])
             # print('쿼리...',query)
 
             # self.matched_frame_index = random.randint(1,728)

@@ -77,41 +77,41 @@ def poseDB2featureDB():
 
     # 표준화
     HIP_KEY = 'mixamorig2:Hips' 
-    frames_np = np.array(frames)
-    list_hips = {'location': [], 'velocity':[]}
-    list_feet = {'Rfoot':{'tailLocation':[], 'velocity':[]}, 'Lfoot':{'tailLocation':[], 'velocity':[]}}
-    for i in range(len(frames_np)):
-        hip_frames = frames_np[i]['joints'][HIP_KEY]
-        list_hips['location'].append(np.array([hip_frames['location'][0]/100, hip_frames['location'][1]/100, hip_frames['location'][2]/100]))
-        list_hips['velocity'].append(frames_np[i]['joints'][HIP_KEY]['velocity'])
+    # frames_np = np.array(frames)
+    # list_hips = {'location': [], 'velocity':[]}
+    # list_feet = {'Rfoot':{'tailLocation':[], 'velocity':[]}, 'Lfoot':{'tailLocation':[], 'velocity':[]}}
+    # for i in range(len(frames_np)):
+    #     hip_frames = frames_np[i]['joints'][HIP_KEY]
+    #     list_hips['location'].append(np.array([hip_frames['location'][0]/100, hip_frames['location'][1]/100, hip_frames['location'][2]/100]))
+    #     list_hips['velocity'].append(frames_np[i]['joints'][HIP_KEY]['velocity'])
         
-        list_feet['Rfoot']['tailLocation'].append(frames_np[i]['joints']['mixamorig2:RightFoot']['tailLocation'])
-        list_feet['Rfoot']['velocity'].append(frames_np[i]['joints']['mixamorig2:RightFoot']['velocity'])
-        list_feet['Lfoot']['tailLocation'].append(frames_np[i]['joints']['mixamorig2:LeftFoot']['tailLocation'])
-        list_feet['Lfoot']['velocity'].append(frames_np[i]['joints']['mixamorig2:LeftFoot']['velocity'])
+    #     list_feet['Rfoot']['tailLocation'].append(frames_np[i]['joints']['mixamorig2:RightFoot']['tailLocation'])
+    #     list_feet['Rfoot']['velocity'].append(frames_np[i]['joints']['mixamorig2:RightFoot']['velocity'])
+    #     list_feet['Lfoot']['tailLocation'].append(frames_np[i]['joints']['mixamorig2:LeftFoot']['tailLocation'])
+    #     list_feet['Lfoot']['velocity'].append(frames_np[i]['joints']['mixamorig2:LeftFoot']['velocity'])
         
-    list_hips['location'] = ss.zscore(list_hips['location']).tolist()
-    list_hips['velocity'] = ss.zscore(list_hips['velocity']).tolist()
-    list_feet['Rfoot']['tailLocation'] = ss.zscore(list_feet['Rfoot']['tailLocation']).tolist()
-    list_feet['Rfoot']['velocity'] = ss.zscore(list_feet['Rfoot']['velocity']).tolist()
-    list_feet['Lfoot']['tailLocation'] = ss.zscore(list_feet['Lfoot']['tailLocation']).tolist()
-    list_feet['Lfoot']['velocity'] = ss.zscore(list_feet['Lfoot']['velocity']).tolist()
+    # list_hips['location'] = ss.zscore(list_hips['location']).tolist()
+    # list_hips['velocity'] = ss.zscore(list_hips['velocity']).tolist()
+    # list_feet['Rfoot']['tailLocation'] = ss.zscore(list_feet['Rfoot']['tailLocation']).tolist()
+    # list_feet['Rfoot']['velocity'] = ss.zscore(list_feet['Rfoot']['velocity']).tolist()
+    # list_feet['Lfoot']['tailLocation'] = ss.zscore(list_feet['Lfoot']['tailLocation']).tolist()
+    # list_feet['Lfoot']['velocity'] = ss.zscore(list_feet['Lfoot']['velocity']).tolist()
 
-    mean={'hips':{'location':np.mean(list_hips['location']), 'velocity':np.mean(list_hips['velocity'])}, 
-        'Rfoot':{'tailLocation': np.mean(list_feet['Rfoot']['tailLocation']), 'velocity':np.mean(list_feet['Rfoot']['velocity'])},
-        'Lfoot':{'tailLocation': np.mean(list_feet['Lfoot']['tailLocation']), 'velocity':np.mean(list_feet['Lfoot']['velocity'])},
-    }
-    std={'hips':{'location':np.std(list_hips['location']), 'velocity':np.std(list_hips['velocity'])}, 
-        'Rfoot':{'tailLocation': np.std(list_feet['Rfoot']['tailLocation']), 'velocity':np.std(list_feet['Rfoot']['velocity'])},
-        'Lfoot':{'tailLocation': np.std(list_feet['Lfoot']['tailLocation']), 'velocity':np.std(list_feet['Lfoot']['velocity'])},
-    }
+    # mean={'hips':{'location':np.mean(list_hips['location']), 'velocity':np.mean(list_hips['velocity'])}, 
+    #     'Rfoot':{'tailLocation': np.mean(list_feet['Rfoot']['tailLocation']), 'velocity':np.mean(list_feet['Rfoot']['velocity'])},
+    #     'Lfoot':{'tailLocation': np.mean(list_feet['Lfoot']['tailLocation']), 'velocity':np.mean(list_feet['Lfoot']['velocity'])},
+    # }
+    # std={'hips':{'location':np.std(list_hips['location']), 'velocity':np.std(list_hips['velocity'])}, 
+    #     'Rfoot':{'tailLocation': np.std(list_feet['Rfoot']['tailLocation']), 'velocity':np.std(list_feet['Rfoot']['velocity'])},
+    #     'Lfoot':{'tailLocation': np.std(list_feet['Lfoot']['tailLocation']), 'velocity':np.std(list_feet['Lfoot']['velocity'])},
+    # }
 
-    standard_hips = []
-    standard_feet = []
-    for i in range(len(frames_np)):
-        standard_hips.append({'location': list_hips['location'][i], 'velocity':list_hips['velocity'][i]})
-        standard_feet.append({'Rfoot':{'tailLocation':list_feet['Rfoot']['tailLocation'][i], 'velocity':list_feet['Rfoot']['velocity'][i]}, 
-                                'Lfoot':{'tailLocation':list_feet['Lfoot']['tailLocation'][i], 'velocity':list_feet['Lfoot']['velocity'][i]}})
+    # standard_hips = []
+    # standard_feet = []
+    # for i in range(len(frames_np)):
+    #     standard_hips.append({'location': list_hips['location'][i], 'velocity':list_hips['velocity'][i]})
+    #     standard_feet.append({'Rfoot':{'tailLocation':list_feet['Rfoot']['tailLocation'][i], 'velocity':list_feet['Rfoot']['velocity'][i]}, 
+    #                             'Lfoot':{'tailLocation':list_feet['Lfoot']['tailLocation'][i], 'velocity':list_feet['Lfoot']['velocity'][i]}})
 
     for i in range(len(frames)):
         FRAME = frames[i]['joints']
@@ -134,16 +134,22 @@ def poseDB2featureDB():
             continue
 
         # 포즈 특징 채워주기
-        root_velocity = standard_hips[i]['velocity'] 
+        # root_velocity = standard_hips[i]['velocity'] 
 
-        Rfoot_location = standard_feet[i]['Rfoot']['tailLocation']
-        Rfoot_velocity = standard_feet[i]['Rfoot']['velocity']
+        # Rfoot_location = standard_feet[i]['Rfoot']['tailLocation']
+        # Rfoot_velocity = standard_feet[i]['Rfoot']['velocity']
 
-        Lfoot_location = standard_feet[i]['Lfoot']['tailLocation']
-        Lfoot_velocity = standard_feet[i]['Lfoot']['velocity']
+        # Lfoot_location = standard_feet[i]['Lfoot']['tailLocation']
+        # Lfoot_velocity = standard_feet[i]['Lfoot']['velocity']
 
-        print('속도가 맞는지 확인해보자')
-        print(Rfoot_velocity, Lfoot_velocity)
+
+        root_velocity = FRAME[HIP_KEY]['velocity']
+
+        Rfoot_location = FRAME['mixamorig2:RightFoot']['tailLocation']
+        Rfoot_velocity = FRAME['mixamorig2:RightFoot']['velocity']
+
+        Lfoot_location = FRAME['mixamorig2:LeftFoot']['tailLocation']
+        Lfoot_velocity = FRAME['mixamorig2:LeftFoot']['velocity']
 
 
         # 궤적 특징 채워주기
@@ -160,22 +166,6 @@ def poseDB2featureDB():
         FUTURE8 = frames[i+8]['joints'][HIP_KEY]
         FUTURE12 = frames[i+12]['joints'][HIP_KEY]
         FUTURE16 = frames[i+16]['joints'][HIP_KEY]
-
-        # if i < (now_start_index):
-        #     continue
-        # elif i > (now_end_index - 16):
-        #     NOW = frames[i-16]['joints'][HIP_KEY]
-        #     FUTURE4 = frames[i-12]['joints'][HIP_KEY]
-        #     FUTURE8 = frames[i-8]['joints'][HIP_KEY]
-        #     FUTURE12 = frames[i-4]['joints'][HIP_KEY]
-        #     FUTURE16 = frames[i]['joints'][HIP_KEY]
-        # else:
-        #     NOW = frames[i]['joints'][HIP_KEY]
-        #     FUTURE4 = frames[i+4]['joints'][HIP_KEY]
-        #     FUTURE8 = frames[i+8]['joints'][HIP_KEY]
-        #     FUTURE12 = frames[i+12]['joints'][HIP_KEY]
-        #     FUTURE16 = frames[i+16]['joints'][HIP_KEY]
-
 
 
         # z_w = np.array([frames[i]['zAxis'][0], (-1)*frames[i]['zAxis'][2], frames[i]['zAxis'][1]]) # z_w
@@ -204,7 +194,7 @@ def poseDB2featureDB():
         features_npy.append(np.array(new_feature.__dict__))
         features_json.append(new_feature.__dict__)
         print('featureIndex', len(features_json)-1)
-    features_json.append({'mean':mean,'std':std})
+    # features_json.append({'mean':mean,'std':std})
     # npy, json 파일로 저장하기
     np.save(COMBINED_FILE_PATH + 'featureDB.npy', features_npy)
     save_path = os.path.join(COMBINED_FILE_PATH,'featureDB.json')

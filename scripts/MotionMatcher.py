@@ -29,6 +29,8 @@ class MotionMatcher:
     locationDiff = [0,0,0]
     tree = ''
     featureIndex = 0
+
+    isUpdated = False
      
     def __init__(self, IDLE_INDEX):
         self.matched_frame_index = IDLE_INDEX
@@ -82,7 +84,7 @@ class MotionMatcher:
         #print('HEAD:', bone_struct['mixamorig2:LeftFoot'].tail)
 
         joint_names = bone_struct.keys()
-        # isUpdated = False
+        
         nowAnimInfo = poses[self.matched_frame_index]['animInfo'][0]
 
         # 매칭 프레임 찾기
@@ -110,11 +112,12 @@ class MotionMatcher:
                     print('=========동일한 애니메이션 처음부터 실행===========',)
                     self.matched_frame_index =  nowAnimInfo['start']
                     self.featureIndex = self.matched_frame_index
+                    self.isUpdated = True
         
             else: 
                 self.matched_frame_index = newPoseIndex
                 self.featureIndex = findIndex
-                # isUpdated = True
+                self.isUpdated = True
             
             # self.matched_frame_index = newPoseIndex
             # self.featureIndex = findIndex
@@ -143,7 +146,9 @@ class MotionMatcher:
                 
         else: 
             self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
+            # self.isUpdated = True
 
+        print('isUpdated : ', self.isUpdated)
 
         print('애니메이션 이름 : ', poses[self.matched_frame_index]['animInfo'][0]['name'], poses[self.matched_frame_index]['animInfo'][0]['index'])
         # 해당하는 프레임으로 애니메이션 교체 & 재생 
@@ -153,7 +158,7 @@ class MotionMatcher:
             jointLocation = poses[self.matched_frame_index]['joints'][joint]['location']
             # 힙 조인트 위치정보 업데이트                
             if joint == 'mixamorig2:Hips': 
-                if self.time == UPDATE_TIME or self.matched_frame_index==nowAnimInfo['start']: # update time 16까지는 괜찮음
+                if self.isUpdated: # update time 16까지는 괜찮음
                     print('여기 들어왔니?')
                     self.firstPoseRotation = jointRotation # 초기 pose의 rotation
                     self.firstPoseLocation = jointLocation # 초기 pose의 location
@@ -201,5 +206,6 @@ class MotionMatcher:
         
         # 시간 업데이트
         self.time = (self.time + 1) % (UPDATE_TIME + 1)
+        self.isUpdated = False
 
      

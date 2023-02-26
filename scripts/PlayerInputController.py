@@ -76,6 +76,7 @@ class ModalOperator(bpy.types.Operator):
         obj = bpy.context.object
         bone_struct = obj.pose.bones
         joint_names = bone_struct.keys()
+        self.motionMatcher.matched_frame_index = self.init_pose
 
         for joint in joint_names:
             jointRotation = poses[self.init_pose]['joints'][joint]['rotation']

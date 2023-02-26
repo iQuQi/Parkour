@@ -40,8 +40,8 @@ class MotionMatcher:
         for i in range(len(features)-1):
             #point = feature['rootSpeed'].copy()
             point = []
-            # point += features[i]['footSpeed']['left'] + features[i]['footSpeed']['right'] # foot 추가
             point += features[i]['footLocation']['left'] + features[i]['footLocation']['right'] # foot 추가
+            point += (np.array(features[i]['footSpeed']['left'])/10).tolist() + (np.array(features[i]['footSpeed']['right'])/10).tolist() # foot 추가
 
             for location in features[i]['trajectoryLocation']:
                 # point += [location[0]/100, location[1]/100, location[2]/100]
@@ -164,7 +164,7 @@ class MotionMatcher:
                     self.firstPoseLocation = jointLocation # 초기 pose의 location
                     # 현재 힙 정보 저장해두기
                     obj.location = addArray3(obj.location,obj.rotation_euler.to_matrix()@mathutils.Vector([bone_struct[joint].location[0]/100,bone_struct[joint].location[1]/100,bone_struct[joint].location[2]/100]))
-                    # obj.location[2] = 0
+                    obj.location[2] = 0
                     
                     bone_origin = mathutils.Quaternion(bone_struct[joint].rotation_quaternion).to_matrix()
                     bone_vector = bone_origin[0]+bone_origin[1]+bone_origin[2]

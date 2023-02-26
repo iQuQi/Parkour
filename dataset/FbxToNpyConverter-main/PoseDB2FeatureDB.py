@@ -146,10 +146,10 @@ def poseDB2featureDB():
         root_velocity = FRAME[HIP_KEY]['velocity']
 
         Rfoot_location = FRAME['mixamorig2:RightFoot']['tailLocation']
-        Rfoot_velocity = FRAME['mixamorig2:RightFoot']['velocity']
+        Rfoot_velocity = FRAME['mixamorig2:RightFoot']['tailVelocity']
 
         Lfoot_location = FRAME['mixamorig2:LeftFoot']['tailLocation']
-        Lfoot_velocity = FRAME['mixamorig2:LeftFoot']['velocity']
+        Lfoot_velocity = FRAME['mixamorig2:LeftFoot']['tailVelocity']
 
 
         # 궤적 특징 채워주기

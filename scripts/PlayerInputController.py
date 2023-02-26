@@ -159,10 +159,10 @@ class ModalOperator(bpy.types.Operator):
         rootVelocity = speed*bone_struct['mixamorig2:Hips'].z_axis
 
         RfootLocation = poseStructs['mixamorig2:RightFoot']['tailLocation']
-        RfootVelocity= poseStructs['mixamorig2:RightFoot']['velocity']
+        RfootVelocity= poseStructs['mixamorig2:RightFoot']['tailVelocity']
 
         LfootLocation = poseStructs['mixamorig2:LeftFoot']['tailLocation']
-        LfootVelocity= poseStructs['mixamorig2:LeftFoot']['velocity']
+        LfootVelocity= poseStructs['mixamorig2:LeftFoot']['tailVelocity']
 
   
         self.nowLocation = [0, 0, 0]
@@ -193,10 +193,11 @@ class ModalOperator(bpy.types.Operator):
         for index, point in enumerate(printPoint):
             bpy.data.objects['Point'+ str(index+1)].location = point
 
-        print('궤적 예측 포인트-Local', LfootLocation + RfootLocation)
+        print('궤적 예측 포인트-Local', LfootVelocity + RfootVelocity)
         # print('궤적 예측 포인트-Local', self.calculateStandard(trajectoryLocation, features[-1]['mean']['hips']['location'], features[-1]['std']['hips']['location']))
         # return rootVelocity + LfootVelocity + RfootVelocity + LfootLocation + RfootLocation + trajectoryLocation + trajectoryDirection
-        return LfootLocation + RfootLocation + (np.array(trajectoryLocation)*5).tolist()
+        # return LfootLocation + RfootLocation + (np.array(trajectoryLocation)*5).tolist()
+        return LfootLocation + RfootLocation + (np.array(LfootVelocity)/10).tolist() + (np.array(RfootVelocity)/10).tolist() + (np.array(trajectoryLocation)*5).tolist()
         # return self.calculateStandard(LfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) +self.calculateStandard(RfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) + self.calculateStandard(trajectoryLocation, features[-1]['mean']['hips']['location'], features[-1]['std']['hips']['location'])
         # return self.calculateStandard(LfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) +self.calculateStandard(RfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) + (np.array(trajectoryLocation)*10).tolist()
         # return trajectoryLocation

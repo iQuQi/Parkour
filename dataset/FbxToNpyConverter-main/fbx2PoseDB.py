@@ -33,10 +33,11 @@ class AnimInfo:
         self.index = index
 
 class Joint:
-    def __init__(self, location, rotation, angular_velocity, velocity, tail):
+    def __init__(self, location, rotation, angular_velocity, velocity, tail, tail_velocity):
         self.location = location
         self.rotation = rotation
         self.tailLocation = tail
+        self.tailVelocity = tail_velocity
         self.angularVelocity = angular_velocity
         self.velocity = velocity  
 
@@ -107,6 +108,7 @@ def fbx2PoseDB():
 
         prev_location = {}
         prev_rotation = {}
+        prev_tail_location = {}
         out_dict_list = []
         
         for i in range(int(frame_end)+1):
@@ -130,15 +132,18 @@ def fbx2PoseDB():
 
                 # 속도 구하기 위해
                 if(i==0):
-                    velocity=[0,0,0]
-                    angular_velocity=[0,0,0,0]
+                    velocity = [0,0,0]
+                    angular_velocity = [0,0,0,0]
+                    tail_velocity = [0,0,0]
                 else:
                     velocity = [(local_location[X]-prev_location[name][X])*30,(local_location[Y]-prev_location[name][Y])*30, (local_location[Z]-prev_location[name][Z])*30]
                     angular_velocity = [(local_rotation.w-prev_rotation[name].w)*30,(local_rotation.x-prev_rotation[name].x)*30,(local_rotation.y-prev_rotation[name].y)*30, (local_rotation.z-prev_rotation[name].z)*30]
+                    tail_velocity = [(tail_location[X]-prev_tail_location[name][X])*30,(tail_location[Y]-prev_tail_location[name][Y])*30, (tail_location[Z]-prev_tail_location[name][Z])*30]
 
                     # i!=0 일 때 구한 속도 대입
                     out_dict_list[i-1]['joints'][correct_name]['angular_velocity'] = angular_velocity
                     out_dict_list[i-1]['joints'][correct_name]['velocity'] = velocity
+                    out_dict_list[i-1]['joints'][correct_name]['tail_velocity'] = tail_velocity
 
 
                 # Hip의 local z축 정보
@@ -157,11 +162,12 @@ def fbx2PoseDB():
                 M = np.linalg.inv(M)
 
                 # 새로운 joint 추가
-                joint = Joint(location, rotation, angular_velocity, velocity, global2local(tail_location,M))
+                joint = Joint(location, rotation, angular_velocity, velocity, global2local(tail_location,M), tail_velocity)
                 out_dict['joints'][correct_name] = joint.__dict__
                 
                 prev_location[name] = location # name, correct_name 관련 없지만 일단 name으로 둠
                 prev_rotation[name] = local_rotation.copy()
+                prev_tail_location[name] = tail_location.copy()
             
             animInfo = AnimInfo(anim_name, index = global_index, start = start_index, end = end_index)
             out_dict['animInfo'].append(animInfo.__dict__)

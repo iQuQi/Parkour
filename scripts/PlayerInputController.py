@@ -118,8 +118,10 @@ class ModalOperator(bpy.types.Operator):
             input_direction[Z] += (-1*GOAL) 
         if self.KEY_MAP['LEFT_ARROW']:
             input_direction[X] += GOAL
+            if input_direction[Z]==0: input_direction[Z] += GOAL/2
         if self.KEY_MAP['RIGHT_ARROW']:
             input_direction[X] += (-1*GOAL) 
+            if input_direction[Z]==0: input_direction[Z] += GOAL/2
         if self.KEY_MAP[RUN]:
             input_direction *= 2.5
 

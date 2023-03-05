@@ -13,6 +13,7 @@ from math import radians
 
 #Combined Files Path
 COMBINED_FILE_PATH = os.path.abspath('dataSet.npy')
+TPOSE_NECK_ROTATION = [0.9987869262695312, 0.04907594621181488, -0.0013538144994527102, 0.0037928603123873472]
 
 class MotionMatcher:
     motion = ''
@@ -31,6 +32,8 @@ class MotionMatcher:
     firstPoseIndex = 0
 
     isUpdated = False
+
+    stopEnd = False
      
     def __init__(self, IDLE_INDEX):
         self.matched_frame_index = IDLE_INDEX
@@ -101,22 +104,27 @@ class MotionMatcher:
             #     self.matched_frame_index = self.matched_frame_index+1
                 
             # else:
+            
             newPoseIndex = features[findIndex]['poseIndex']     
             newAnimInfo = poses[newPoseIndex]['animInfo'][0]
-            if nowAnimInfo['name'] == newAnimInfo['name']:
-                if self.matched_frame_index + 1 <= nowAnimInfo['end']:
-                    print('=========동일한 애니메이션 계속 실행===========',)
-                    self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
-                else:
-                    print('=========동일한 애니메이션 처음부터 실행===========',)
-                    self.matched_frame_index =  nowAnimInfo['start']
+            if (nowAnimInfo['name'] == 'Female Stop Walking.fbx' or nowAnimInfo['name'] == 'Rifle Backward Walk To Stop.fbx') and self.matched_frame_index + 1 == nowAnimInfo['end']:
+                print('=========stop 애니메이션 마지막 index===========')
+                self.stopEnd = True
+            else:
+                if nowAnimInfo['name'] == newAnimInfo['name']:
+                    if self.matched_frame_index + 1 <= nowAnimInfo['end']:
+                        print('=========동일한 애니메이션 계속 실행===========',)
+                        self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
+                    else:
+                        print('=========동일한 애니메이션 처음부터 실행===========',)
+                        self.matched_frame_index =  nowAnimInfo['start']
+                        self.firstPoseIndex = self.matched_frame_index
+                        self.isUpdated = True
+            
+                else: 
+                    self.matched_frame_index = newPoseIndex
                     self.firstPoseIndex = self.matched_frame_index
                     self.isUpdated = True
-        
-            else: 
-                self.matched_frame_index = newPoseIndex
-                self.firstPoseIndex = self.matched_frame_index
-                self.isUpdated = True
             
             # self.matched_frame_index = newPoseIndex
             # self.featureIndex = findIndex
@@ -195,7 +203,10 @@ class MotionMatcher:
                         featurePoint.location = [diff[0]/100 + obj.location[0], diff[1]/100 + obj.location[1], 0]
                     else:
                         featurePoint.hide_viewport = True
-                
+
+            elif joint == 'mixamorig2:Neck':   
+                bone_struct[joint].location = jointLocation            
+                bone_struct[joint].rotation_quaternion = TPOSE_NECK_ROTATION
             # 나머지 조인트 위치정보 업데이트
             else: 
                 bone_struct[joint].location = jointLocation            

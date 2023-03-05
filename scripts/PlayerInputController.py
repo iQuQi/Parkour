@@ -63,10 +63,13 @@ class ModalOperator(bpy.types.Operator):
     # 모션 매쳐 객체
     motionMatcher = ''
 
+    first = True
+    prevInput = [-1,-1,-1]
+
     def __init__(self):
         print("Start")
         for index in range(len(poses)-1):
-            if poses[index]['animInfo'][0]['name'] == 'T-Pose.fbx':
+            if poses[index]['animInfo'][0]['name'] == 'Idle.fbx':
                 self.init_pose = index
                 self.motionMatcher = MotionMatcher(index)
 
@@ -132,8 +135,19 @@ class ModalOperator(bpy.types.Operator):
         if np.linalg.norm(input_direction) > 0.0: 
             queryVector = self.createQueryVector(input_direction)
             self.motionMatcher.updateMatchedMotion(queryVector, self.KEY_MAP[CROUCH], self.KEY_MAP[JUMP])
+            self.prevInput = input_direction
         else:
+            if not self.KEY_MAP[RUN]:
+                if self.prevInput[Z] < 0:
+                    input_direction = np.array(self.prevInput) * 0.05
+                else: input_direction = np.array(self.prevInput) * 0.005
+                
+                queryVector = self.createQueryVector(input_direction)
+                self.motionMatcher.updateMatchedMotion(queryVector, self.KEY_MAP[CROUCH], self.KEY_MAP[JUMP])
+                
             self.motionMatcher.time = UPDATE_TIME
+        
+        if self.first: self.first = False
 
     def createQueryVector(self, input_direction):
         obj = bpy.context.object

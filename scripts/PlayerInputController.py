@@ -127,7 +127,7 @@ class ModalOperator(bpy.types.Operator):
         if self.KEY_MAP[RUN]:
             input_direction *= 2.5
 
-        print('INPUT:', input_direction)
+        # print('INPUT:', input_direction)
         
         if np.linalg.norm(input_direction) > 0.0: 
             queryVector = self.createQueryVector(input_direction)
@@ -157,7 +157,7 @@ class ModalOperator(bpy.types.Operator):
         if speed == 0: speed = ZERO_VELOCITY 
         if self.KEY_MAP[RUN]: speed *= 2
         
-        print('SPEED:', speed)
+        # print('SPEED:', speed)
         rootVelocity = speed*bone_struct['mixamorig2:Hips'].z_axis
 
         RfootLocation = poseStructs['mixamorig2:RightFoot']['tailLocation']
@@ -184,7 +184,6 @@ class ModalOperator(bpy.types.Operator):
                 nowRotationMatrix = mathutils.Quaternion(poses[self.motionMatcher.matched_frame_index]['joints']['mixamorig2:Hips']['rotation']).to_matrix() 
                 diff = obj.rotation_euler.to_matrix() @  mathutils.Matrix(nowRotationMatrix) @ mathutils.Vector(updatePosition)
 
-                print('현재 로테이션 매트릭스',nowRotationMatrix,obj.rotation_euler.to_matrix())
                 printPoint.append([diff[0] + globalLocation[0], diff[1] + globalLocation[1], 0])
 
                 trajectoryLocation.extend(updatePosition)
@@ -198,11 +197,11 @@ class ModalOperator(bpy.types.Operator):
         for index, point in enumerate(printPoint):
             bpy.data.objects['Point'+ str(index+1)].location = point
 
-        print('궤적 예측 포인트-Local', LfootVelocity + RfootVelocity)
+        # print('궤적 예측 포인트-Local', LfootVelocity + RfootVelocity)
         # print('궤적 예측 포인트-Local', self.calculateStandard(trajectoryLocation, features[-1]['mean']['hips']['location'], features[-1]['std']['hips']['location']))
         # return rootVelocity + LfootVelocity + RfootVelocity + LfootLocation + RfootLocation + trajectoryLocation + trajectoryDirection
         # return LfootLocation + RfootLocation + (np.array(trajectoryLocation)*5).tolist()
-        return LfootLocation + RfootLocation + (np.array(LfootVelocity)/10).tolist() + (np.array(RfootVelocity)/10).tolist() + (np.array(trajectoryLocation)*5).tolist()
+        return (np.array(LfootLocation)/1.5).tolist() + (np.array(RfootLocation)/1.5).tolist() + (np.array(LfootVelocity)/10).tolist() + (np.array(RfootVelocity)/10).tolist() + (np.array(trajectoryLocation)*5).tolist()
         # return self.calculateStandard(LfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) +self.calculateStandard(RfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) + self.calculateStandard(trajectoryLocation, features[-1]['mean']['hips']['location'], features[-1]['std']['hips']['location'])
         # return self.calculateStandard(LfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) +self.calculateStandard(RfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) + (np.array(trajectoryLocation)*10).tolist()
         # return trajectoryLocation
@@ -231,7 +230,6 @@ class ModalOperator(bpy.types.Operator):
             self.setMove(event.type, event.value) # Apply
             
         self.move()
-        print('EVNET MODAL!!!!!!!!')
 
         return {'RUNNING_MODAL'}
 
@@ -249,7 +247,8 @@ def menu_func(self, context):
     self.layout.operator(ModalOperator.bl_idname, text="Modal Operator")
 
 def invokeMotionMatcher():
-    print('invokeMotionMatcher')
+    # print('invokeMotionMatcher')
+    print()
     
     
     

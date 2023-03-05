@@ -8,7 +8,7 @@ KEY_CODE = {'Z': 6,'X': 7, 'C': 8,'V': 9, 'SPACE': 49, 'LEFT': 123, 'RIGHT': 124
 X = 0
 Y = 1
 Z = 2
-UPDATE_TIME = 7
+UPDATE_TIME = 3
 GOAL = 0.8
 IDLE_INDEX = -1
 DEFAULT_EULER = [1.5708,0,0]
@@ -57,8 +57,6 @@ def updateM(globalLocation, axes):
     y_v = np.array(axes[1])
     z_w = np.array(axes[2]) # z_w
 
-    print(x_u)
-
     M = np.array([[x_u[0],y_v[0], z_w[0], globalLocation[0]],
         [x_u[1], y_v[1], z_w[1], globalLocation[1]],
         [x_u[2], y_v[2], z_w[2],  globalLocation[2]],
@@ -70,7 +68,7 @@ def calculateDistance(feature, query):
     # print('쿼리 벡터 출력 : ', query)
     for i in range(len(feature)):
         total += distance.euclidean(feature[i], query[i])
-        print('각 차이 : idx = ', i, distance.euclidean(feature[i], query[i]),feature[i],query[i])
+        # print('각 차이 : idx = ', i, distance.euclidean(feature[i], query[i]),feature[i],query[i])
     return total
 
 def L2_norm(x):
@@ -82,7 +80,7 @@ def L2_norm(x):
 def getRadian(x,y):
     v = np.inner(x, y) / (L2_norm(x) * L2_norm(y))
     radian = np.arccos(v)
-    print('getANGLE:', np.inner(x, y),L2_norm(x),L2_norm(y), v)
+    # print('getANGLE:', np.inner(x, y),L2_norm(x),L2_norm(y), v)
     return radian
 
 
@@ -92,6 +90,3 @@ def transformVectorFormat(vec):
 
 def transformMatrixFormat(mat):
     return np.array([transformVectorFormat(mat[0]),transformVectorFormat(mat[1]),transformVectorFormat(mat[2])])
-
-def transformMatrixFormat2(mat):
-    return np.array([mat[0], -1 * mat[2], mat[1]])

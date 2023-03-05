@@ -90,8 +90,8 @@ class MotionMatcher:
         if self.time == UPDATE_TIME or self.matched_frame_index + 1 > nowAnimInfo['end']:
             # 쿼리벡터 넣어주기
             distance, findIndex = self.tree.query(query)
-            print('이게 포인트', features[findIndex]['trajectoryLocation'])
-            print('트리에서 뽑은 값 : ', poses[self.matched_frame_index]['joints']['mixamorig2:LeftFoot']['tailLocation'], poses[self.matched_frame_index]['joints']['mixamorig2:RightFoot']['tailLocation'])
+            # print('이게 포인트', features[findIndex]['trajectoryLocation'])
+            # print('트리에서 뽑은 값 : ', poses[self.matched_frame_index]['joints']['mixamorig2:LeftFoot']['tailLocation'], poses[self.matched_frame_index]['joints']['mixamorig2:RightFoot']['tailLocation'])
             # print('쿼리...',query)
 
             # self.matched_frame_index = random.randint(1,728)
@@ -146,8 +146,6 @@ class MotionMatcher:
         else: 
             self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
             # self.isUpdated = True
-
-        print('isUpdated : ', self.isUpdated)
 
         print('애니메이션 이름 : ', poses[self.matched_frame_index]['animInfo'][0]['name'], poses[self.matched_frame_index]['animInfo'][0]['index'])
         # 해당하는 프레임으로 애니메이션 교체 & 재생 

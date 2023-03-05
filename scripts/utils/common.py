@@ -8,7 +8,7 @@ KEY_CODE = {'Z': 6,'X': 7, 'C': 8,'V': 9, 'SPACE': 49, 'LEFT': 123, 'RIGHT': 124
 X = 0
 Y = 1
 Z = 2
-UPDATE_TIME = 10
+UPDATE_TIME = 7
 GOAL = 0.8
 IDLE_INDEX = -1
 DEFAULT_EULER = [1.5708,0,0]
@@ -92,3 +92,6 @@ def transformVectorFormat(vec):
 
 def transformMatrixFormat(mat):
     return np.array([transformVectorFormat(mat[0]),transformVectorFormat(mat[1]),transformVectorFormat(mat[2])])
+
+def transformMatrixFormat2(mat):
+    return np.array([mat[0], -1 * mat[2], mat[1]])

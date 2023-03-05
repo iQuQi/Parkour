@@ -179,7 +179,10 @@ class ModalOperator(bpy.types.Operator):
             #     printPoint.append([globalLocation[0], globalLocation[1],0])
             #     trajectoryLocation.extend(self.nowLocation)
             if index % 2 != 0: 
-                diff = obj.rotation_euler.to_matrix() @ mathutils.Vector(updatePosition)
+                nowRotationMatrix = mathutils.Quaternion(poses[self.motionMatcher.matched_frame_index]['joints']['mixamorig2:Hips']['rotation']).to_matrix() 
+                diff = obj.rotation_euler.to_matrix() @  mathutils.Matrix(nowRotationMatrix) @ mathutils.Vector(updatePosition)
+
+                print('현재 로테이션 매트릭스',nowRotationMatrix,obj.rotation_euler.to_matrix())
                 printPoint.append([diff[0] + globalLocation[0], diff[1] + globalLocation[1], 0])
 
                 trajectoryLocation.extend(updatePosition)

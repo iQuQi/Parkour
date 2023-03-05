@@ -28,7 +28,7 @@ class MotionMatcher:
     rotationDiff = [0,0,0,0]
     locationDiff = [0,0,0]
     tree = ''
-    featureIndex = 0
+    firstPoseIndex = 0
 
     isUpdated = False
      
@@ -72,8 +72,8 @@ class MotionMatcher:
     def getCurrentPose(self):
         return poses[self.matched_frame_index]['joints']
 
-    def getCurrentFeature(self):
-        return features[self.featureIndex]
+    def getCurrentFirstPose(self):
+        return poses[self.firstPoseIndex]['joints']
 
     def updateMatchedMotion(self, query, crouch, jump):
         # print('Function CALL - UpdateMatchedMotion:   ', query)
@@ -107,16 +107,15 @@ class MotionMatcher:
                 if self.matched_frame_index + 1 <= nowAnimInfo['end']:
                     print('=========동일한 애니메이션 계속 실행===========',)
                     self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
-                    self.featureIndex = self.matched_frame_index
                 else:
                     print('=========동일한 애니메이션 처음부터 실행===========',)
                     self.matched_frame_index =  nowAnimInfo['start']
-                    self.featureIndex = self.matched_frame_index
+                    self.firstPoseIndex = self.matched_frame_index
                     self.isUpdated = True
         
             else: 
                 self.matched_frame_index = newPoseIndex
-                self.featureIndex = findIndex
+                self.firstPoseIndex = self.matched_frame_index
                 self.isUpdated = True
             
             # self.matched_frame_index = newPoseIndex

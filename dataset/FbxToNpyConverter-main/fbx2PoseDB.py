@@ -90,6 +90,7 @@ def fbx2PoseDB():
     
     # for anim_name in anims_path:
     for anim_name in anims_path: 
+        if anim_name == '.DS_Store': continue
         anim_file_path = os.path.join(SRC_DATA_DIR,anim_name)
         save_dir = os.path.join(OUT_DATA_DIR,anim_name.split('.')[0],'JointDict')
         
@@ -197,6 +198,7 @@ def poseDB2npy():
     anim_names = os.listdir(json_dir)
     
     for anim_name in anim_names:
+        if anim_name == '.DS_Store': continue
         files_path = os.path.join(json_dir,anim_name,'jointDict')
         frame_files = os.listdir(files_path)
         frame_files.sort()
@@ -228,6 +230,7 @@ def combineFiles():
     combined_npy_matrix = []
 
     for anim_name in anims_path:
+        if anim_name == '.DS_Store': continue
         anim_file_path = os.path.join(FINAL_DIR_PATH, anim_name, anim_name + '.npy')
         frames = np.load(anim_file_path, allow_pickle=True)
         combined_npy_matrix.extend(frames[:-1]) 

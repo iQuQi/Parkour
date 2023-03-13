@@ -11,6 +11,8 @@ from scipy import spatial
 import mathutils
 from math import radians
 
+from Inertialization import Inertialization
+
 #Combined Files Path
 COMBINED_FILE_PATH = os.path.abspath('dataSet.npy')
 TPOSE_NECK_ROTATION = [0.9987869262695312, 0.04907594621181488, -0.0013538144994527102, 0.0037928603123873472]
@@ -34,6 +36,11 @@ class MotionMatcher:
     isUpdated = False
 
     stopEnd = False
+
+    inertialization = Inertialization
+    inertialize = False
+    inertializeHalfLife = 0.1
+    inertializeDeltaTime = 1/30
      
     def __init__(self, IDLE_INDEX):
         self.matched_frame_index = IDLE_INDEX
@@ -43,8 +50,8 @@ class MotionMatcher:
         for i in range(len(features)-1):
             #point = feature['rootSpeed'].copy()
             point = []
-            point += features[i]['footLocation']['left'] + features[i]['footLocation']['right'] # foot 추가
-            point += (np.array(features[i]['footSpeed']['left'])/10).tolist() + (np.array(features[i]['footSpeed']['right'])/10).tolist() # foot 추가
+            point += (np.array(features[i]['footLocation']['left'])/1.5).tolist() + (np.array(features[i]['footLocation']['right'])/1.5).tolist() # foot 추가
+            point += (np.array(features[i]['footSpeed']['left'])/5).tolist() + (np.array(features[i]['footSpeed']['right'])/5).tolist() # foot 추가
 
             for location in features[i]['trajectoryLocation']:
                 # point += [location[0]/100, location[1]/100, location[2]/100]
@@ -88,6 +95,7 @@ class MotionMatcher:
         joint_names = bone_struct.keys()
         
         nowAnimInfo = poses[self.matched_frame_index]['animInfo'][0]
+        sourcePose = poses[self.matched_frame_index] # for Inertialization
 
         # 매칭 프레임 찾기
         if self.time == UPDATE_TIME or self.matched_frame_index + 1 > nowAnimInfo['end']:
@@ -111,20 +119,34 @@ class MotionMatcher:
                 print('=========stop 애니메이션 마지막 index===========')
                 self.stopEnd = True
             else:
-                if nowAnimInfo['name'] == newAnimInfo['name']:
-                    if self.matched_frame_index + 1 <= nowAnimInfo['end']:
-                        print('=========동일한 애니메이션 계속 실행===========',)
-                        self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
-                    else:
-                        print('=========동일한 애니메이션 처음부터 실행===========',)
-                        self.matched_frame_index =  nowAnimInfo['start']
-                        self.firstPoseIndex = self.matched_frame_index
-                        self.isUpdated = True
+                if (nowAnimInfo['index'] != newPoseIndex and np.abs(newPoseIndex - nowAnimInfo['index']) > 20):
+                    self.inertialize = True
+                else: self.inertialize = False
+                # else: 추가 버전, 아직
+                #     if self.matched_frame_index + 1 <= nowAnimInfo['end']:
+                #         print('=========동일한 애니메이션 계속 실행===========',)
+                #         self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
+                #     else:
+                #         print('=========동일한 애니메이션 처음부터 실행===========',)
+                #         self.matched_frame_index =  nowAnimInfo['start']
+                #         self.firstPoseIndex = self.matched_frame_index
+                #         self.isUpdated = True
+
+                # 이전 버전
+                # if nowAnimInfo['name'] == newAnimInfo['name']:
+                #     if self.matched_frame_index + 1 <= nowAnimInfo['end']:
+                #         print('=========동일한 애니메이션 계속 실행===========',)
+                #         self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
+                #     else:
+                #         print('=========동일한 애니메이션 처음부터 실행===========',)
+                #         self.matched_frame_index =  nowAnimInfo['start']
+                #         self.firstPoseIndex = self.matched_frame_index
+                #         self.isUpdated = True
             
-                else: 
-                    self.matched_frame_index = newPoseIndex
-                    self.firstPoseIndex = self.matched_frame_index
-                    self.isUpdated = True
+                # else: 
+                self.matched_frame_index = newPoseIndex
+                self.firstPoseIndex = self.matched_frame_index
+                self.isUpdated = True
             
             # self.matched_frame_index = newPoseIndex
             # self.featureIndex = findIndex
@@ -155,11 +177,22 @@ class MotionMatcher:
             self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
             # self.isUpdated = True
 
+        targetPose = poses[self.matched_frame_index] # for Inertialization
+
+        # Inertialization
+        self.inertialization = Inertialization()
+        if self.inertialize:
+            self.inertialization.poseTransition(sourcePose, targetPose)
+            self.inertialization.update(targetPose, self.inertializeHalfLife, self.inertializeDeltaTime)
+
         print('애니메이션 이름 : ', poses[self.matched_frame_index]['animInfo'][0]['name'], poses[self.matched_frame_index]['animInfo'][0]['index'])
         # 해당하는 프레임으로 애니메이션 교체 & 재생 
-        for joint in joint_names:
+        for (index, joint) in enumerate(joint_names):
             # 조인트 회전 정보 업데이트
-            jointRotation = mathutils.Quaternion(poses[self.matched_frame_index]['joints'][joint]['rotation'])
+            if self.inertialize:
+                jointRotation = self.inertialization.inertializedRotations[index]
+            else:    
+                jointRotation = mathutils.Quaternion(poses[self.matched_frame_index]['joints'][joint]['rotation'])
             jointLocation = poses[self.matched_frame_index]['joints'][joint]['location']
             # 힙 조인트 위치정보 업데이트                
             if joint == 'mixamorig2:Hips': 
@@ -191,8 +224,13 @@ class MotionMatcher:
                     self.radian_xz = joint_xz - bone_xz
                     obj.rotation_euler.rotate(mathutils.Euler([0.0,0.0,-self.radian_xz],'XYZ'))
 
-                bone_struct[joint].location = substractArray3(jointLocation, self.firstPoseLocation) # 수평방향 고정
-                bone_struct[joint].rotation_quaternion = jointRotation
+                # inertialization
+                if self.inertialization:
+                    bone_struct[joint].location = substractArray3(self.inertialization.inertializedHips, self.firstPoseLocation) # 수평방향 고정
+                    bone_struct[joint].rotation_quaternion = jointRotation
+                else:
+                    bone_struct[joint].location = substractArray3(jointLocation, self.firstPoseLocation) # 수평방향 고정
+                    bone_struct[joint].rotation_quaternion = jointRotation
 
                 for index in range(5): # 0~4까지
                     featurePoint = bpy.data.objects['Feature'+ str(index+1)]

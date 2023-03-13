@@ -138,13 +138,20 @@ def fbx2PoseDB():
                     tail_velocity = [0,0,0]
                 else:
                     velocity = [(local_location[X]-prev_location[name][X])*30,(local_location[Y]-prev_location[name][Y])*30, (local_location[Z]-prev_location[name][Z])*30]
-                    angular_velocity = [(local_rotation.w-prev_rotation[name].w)*30,(local_rotation.x-prev_rotation[name].x)*30,(local_rotation.y-prev_rotation[name].y)*30, (local_rotation.z-prev_rotation[name].z)*30]
+                    q1 = prev_rotation[name]
+                    q2 = local_rotation
+                    dt = 1/30
+                    # angular_velocity = [(local_rotation.w-prev_rotation[name].w)*30,(local_rotation.x-prev_rotation[name].x)*30,(local_rotation.y-prev_rotation[name].y)*30, (local_rotation.z-prev_rotation[name].z)*30]
+                    angular_velocity = (np.array([
+                                        q1[0]*q2[1] - q1[1]*q2[0] - q1[2]*q2[3] + q1[3]*q2[2],
+                                        q1[0]*q2[2] + q1[1]*q2[3] - q1[2]*q2[0] - q1[3]*q2[1],
+                                        q1[0]*q2[3] - q1[1]*q2[2] + q1[2]*q2[1] - q1[3]*q2[0]])*(2 / dt)).tolist()
                     tail_velocity = [(tail_location[X]-prev_tail_location[name][X])*30,(tail_location[Y]-prev_tail_location[name][Y])*30, (tail_location[Z]-prev_tail_location[name][Z])*30]
 
                     # i!=0 일 때 구한 속도 대입
-                    out_dict_list[i-1]['joints'][correct_name]['angular_velocity'] = angular_velocity
+                    out_dict_list[i-1]['joints'][correct_name]['angularVelocity'] = angular_velocity
                     out_dict_list[i-1]['joints'][correct_name]['velocity'] = velocity
-                    out_dict_list[i-1]['joints'][correct_name]['tail_velocity'] = tail_velocity
+                    out_dict_list[i-1]['joints'][correct_name]['tailVelocity'] = tail_velocity
 
 
                 # Hip의 local z축 정보
@@ -163,7 +170,7 @@ def fbx2PoseDB():
                 M = np.linalg.inv(M)
 
                 # 새로운 joint 추가
-                joint = Joint(location, rotation, angular_velocity, velocity, global2local(tail_location,M), tail_velocity)
+                joint = Joint(location, rotation, angular_velocity, velocity, global2local(tail_location,M), global2local(tail_velocity,M))
                 out_dict['joints'][correct_name] = joint.__dict__
                 
                 prev_location[name] = location # name, correct_name 관련 없지만 일단 name으로 둠

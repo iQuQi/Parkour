@@ -64,7 +64,7 @@ class ModalOperator(bpy.types.Operator):
     motionMatcher = ''
 
     first = True
-    prevInput = [-1,-1,-1]
+    prevInput = [-1, -1, -1]
 
     def __init__(self):
         print("Start")
@@ -89,7 +89,7 @@ class ModalOperator(bpy.types.Operator):
             obj.location = [0,0,0]
             obj.rotation_euler = DEFAULT_EULER
 
-        for index in range(6):
+        for index in range(5):
             print('포인트 전체 초기화')
             bpy.data.objects['Point'+ str(index+1)].location = [0,index/-6,0]
             bpy.data.objects['Feature'+ str(index+1)].location = [0,index/-6.1,0]
@@ -133,17 +133,21 @@ class ModalOperator(bpy.types.Operator):
         # print('INPUT:', input_direction)
         
         if np.linalg.norm(input_direction) > 0.0: 
+            if not np.array_equal(self.prevInput, input_direction):
+                print('같음 ', self.prevInput, input_direction)
+                self.motionMatcher.time = UPDATE_TIME
             queryVector = self.createQueryVector(input_direction)
             self.motionMatcher.updateMatchedMotion(queryVector, self.KEY_MAP[CROUCH], self.KEY_MAP[JUMP])
             self.prevInput = input_direction
         else:
             if not self.KEY_MAP[RUN]:
+                print(input_direction, self.prevInput)
                 if self.prevInput[Z] < 0:
                     input_direction = np.array(self.prevInput) * 0.05
                 else: input_direction = np.array(self.prevInput) * 0.005
                 
                 queryVector = self.createQueryVector(input_direction)
-                self.motionMatcher.updateMatchedMotion(queryVector, self.KEY_MAP[CROUCH], self.KEY_MAP[JUMP])
+                self.motionMatcher.updateMatchedMotion(queryVector, self.KEY_MAP[CROUCH], self.KEY_MAP[JUMP], self.init_pose)
                 
             self.motionMatcher.time = UPDATE_TIME
         
@@ -215,7 +219,7 @@ class ModalOperator(bpy.types.Operator):
         # print('궤적 예측 포인트-Local', self.calculateStandard(trajectoryLocation, features[-1]['mean']['hips']['location'], features[-1]['std']['hips']['location']))
         # return rootVelocity + LfootVelocity + RfootVelocity + LfootLocation + RfootLocation + trajectoryLocation + trajectoryDirection
         # return LfootLocation + RfootLocation + (np.array(trajectoryLocation)*5).tolist()
-        return (np.array(LfootLocation)/1.5).tolist() + (np.array(RfootLocation)/1.5).tolist() + (np.array(LfootVelocity)/5).tolist() + (np.array(RfootVelocity)/5).tolist() + (np.array(trajectoryLocation)*5).tolist()
+        return (np.array(LfootLocation)/1.5).tolist() + (np.array(RfootLocation)/1.5).tolist() + (np.array(LfootVelocity)/2).tolist() + (np.array(RfootVelocity)/2).tolist() + (np.array(trajectoryLocation)*5).tolist()
         # return self.calculateStandard(LfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) +self.calculateStandard(RfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) + self.calculateStandard(trajectoryLocation, features[-1]['mean']['hips']['location'], features[-1]['std']['hips']['location'])
         # return self.calculateStandard(LfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) +self.calculateStandard(RfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) + (np.array(trajectoryLocation)*10).tolist()
         # return trajectoryLocation

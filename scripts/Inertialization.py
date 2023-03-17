@@ -93,8 +93,7 @@ class Inertialization:
     def inertializeJointTransition(self, sourceRot, sourceAngularVel,
                                     targetRot, targetAngularVel,
                                     index): # offsetRot, offsetAngularvel
-        self.offsetRotations[index] = (self.abs((targetRot.inverted() @ (sourceRot @ self.offsetRotations[index])))).normalized()
-        print('1번', self.offsetRotations[index], index)
+        self.offsetRotations[index] = (self.abs((targetRot.to_matrix().inverted() @ (sourceRot.to_matrix() @ self.offsetRotations[index].to_matrix())).to_quaternion())).normalized()
         self.offsetAngularVelocities[index] = (sourceAngularVel + self.offsetAngularVelocities[index]) - targetAngularVel
 
     def inertializeJointTransition4Hips(self, source, sourceVel,
@@ -111,9 +110,7 @@ class Inertialization:
                                 index): 
         # offsetRot = offsetRotations, offsetAngularVel = offsetAngularVelocities, newRot = inertializedRotations, newAngularVel = inertializedAngularVelocities
         self.decaySpringDamperImplicit(index, halfLife, deltaTime)
-        print('이거', targetRot, self.offsetRotations[index])
-        self.inertializedRotations[index] = targetRot @ self.offsetRotations[index]
-        print(targetAngularVel, self.offsetAngularVelocities[index])
+        self.inertializedRotations[index] = (targetRot.to_matrix() @ self.offsetRotations[index].to_matrix()).to_quaternion()
         self.inertializedAngularVelocities[index] = targetAngularVel @ self.offsetAngularVelocities[index]
         
     def inertializeJointUpdate4Hips(self, target, targetVel,
@@ -135,12 +132,10 @@ class Inertialization:
         angularVel = self.offsetAngularVelocities[index]
         y = self.halfLifeToDamping(halfLife) / 2.0; # this could be precomputed
         j0 = self.quaternionToScaledAngleAxis(rot)
-        print(j0, angularVel)
         j1 = angularVel + j0 * y
         eyedt = self.fastNEgeExp(y * deltaTime) # this could be precomputed if several agents use it the same frame
 
         self.offsetRotations[index] = self.quaternionFromScaledAngleAxis(eyedt * j0 + j1 * deltaTime)
-        print('2번', self.offsetRotations[index], index)
         self.offsetAngularVelocities[index] = (eyedt * (angularVel - j1 * y * deltaTime))
     
     # <summary>
@@ -165,7 +160,6 @@ class Inertialization:
         return 1.0 / (1.0 + x + 0.48 * x * x + 0.235 * x * x * x)
         
     def quaternionToScaledAngleAxis(self, q, eps = 1e-8):
-        print(self.log(q,eps), 2.0 * self.log(q, eps))
         return 2.0 * self.log(q, eps)
 
     def quaternionFromScaledAngleAxis(self, angleAxis, eps = 1e-8):

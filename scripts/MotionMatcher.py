@@ -51,7 +51,7 @@ class MotionMatcher:
             #point = feature['rootSpeed'].copy()
             point = []
             point += (np.array(features[i]['footLocation']['left'])/1.5).tolist() + (np.array(features[i]['footLocation']['right'])/1.5).tolist() # foot 추가
-            point += (np.array(features[i]['footSpeed']['left'])/5).tolist() + (np.array(features[i]['footSpeed']['right'])/5).tolist() # foot 추가
+            point += (np.array(features[i]['footSpeed']['left'])/2).tolist() + (np.array(features[i]['footSpeed']['right'])/2).tolist() # foot 추가
 
             for location in features[i]['trajectoryLocation']:
                 # point += [location[0]/100, location[1]/100, location[2]/100]
@@ -82,10 +82,7 @@ class MotionMatcher:
     def getCurrentPose(self):
         return poses[self.matched_frame_index]['joints']
 
-    def getCurrentFirstPose(self):
-        return poses[self.firstPoseIndex]['joints']
-
-    def updateMatchedMotion(self, query, crouch, jump):
+    def updateMatchedMotion(self, query, crouch, jump, stopIndex=-1):
         # print('Function CALL - UpdateMatchedMotion:   ', query)
         obj = bpy.context.object
 
@@ -97,8 +94,12 @@ class MotionMatcher:
         nowAnimInfo = poses[self.matched_frame_index]['animInfo'][0]
         sourcePose = poses[self.matched_frame_index] # for Inertialization
 
+        if stopIndex!=-1:
+            self.matched_frame_index = stopIndex
+            self.isUpdated = True
+          
         # 매칭 프레임 찾기
-        if self.time == UPDATE_TIME or self.matched_frame_index + 1 > nowAnimInfo['end']:
+        elif self.time == UPDATE_TIME or self.matched_frame_index + 1 > nowAnimInfo['end']:
             # 쿼리벡터 넣어주기
             distance, findIndex = self.tree.query(query)
             # print('이게 포인트', features[findIndex]['trajectoryLocation'])
@@ -115,41 +116,35 @@ class MotionMatcher:
             
             newPoseIndex = features[findIndex]['poseIndex']     
             newAnimInfo = poses[newPoseIndex]['animInfo'][0]
-            if (nowAnimInfo['name'] == 'Female Stop Walking.fbx' or nowAnimInfo['name'] == 'Rifle Backward Walk To Stop.fbx') and self.matched_frame_index + 1 == nowAnimInfo['end']:
+            if (nowAnimInfo['name'] == 'Idle.fbx' or nowAnimInfo['name'] == 'Idle.fbx') and self.matched_frame_index + 1 == nowAnimInfo['end']:
                 print('=========stop 애니메이션 마지막 index===========')
                 self.stopEnd = True
             else:
-                if (nowAnimInfo['index'] != newPoseIndex and np.abs(newPoseIndex - nowAnimInfo['index']) > 20):
-                    self.inertialize = True
-                else: self.inertialize = False
-                # else: 추가 버전, 아직
-                #     if self.matched_frame_index + 1 <= nowAnimInfo['end']:
-                #         print('=========동일한 애니메이션 계속 실행===========',)
-                #         self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
-                #     else:
-                #         print('=========동일한 애니메이션 처음부터 실행===========',)
-                #         self.matched_frame_index =  nowAnimInfo['start']
-                #         self.firstPoseIndex = self.matched_frame_index
-                #         self.isUpdated = True
+                # inertialize 조건
+                # 1. 다른 애니메이션으로 전환될 때
+                # 2. 같은 애니메이션일 때, index 차이가 10이상일 때
+                # => isupdate
 
-                # 이전 버전
-                # if nowAnimInfo['name'] == newAnimInfo['name']:
-                #     if self.matched_frame_index + 1 <= nowAnimInfo['end']:
-                #         print('=========동일한 애니메이션 계속 실행===========',)
-                #         self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
-                #     else:
-                #         print('=========동일한 애니메이션 처음부터 실행===========',)
-                #         self.matched_frame_index =  nowAnimInfo['start']
-                #         self.firstPoseIndex = self.matched_frame_index
-                #         self.isUpdated = True
-            
-                # else: 
-                self.matched_frame_index = newPoseIndex
-                self.firstPoseIndex = self.matched_frame_index
-                self.isUpdated = True
-            
-            # self.matched_frame_index = newPoseIndex
-            # self.featureIndex = findIndex
+                # 자연스러운 전환을 위한 isupdate 조건
+                # 1.
+                DIFF_ANIMATION = nowAnimInfo['name'] != newAnimInfo['name']
+                SAME_ANIMATION = nowAnimInfo['name'] == newAnimInfo['name']
+                IDX_DIFF_UNDER_20 = np.abs(newPoseIndex - nowAnimInfo['index']) < 20
+                IDX_DIFF_OVER_20 = np.abs(newPoseIndex - nowAnimInfo['index']) >= 20
+
+                if SAME_ANIMATION and IDX_DIFF_UNDER_20:
+                    if self.matched_frame_index + 1 <= nowAnimInfo['end']:
+                        print('=========동일한 애니메이션 계속 실행===========',)
+                        self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
+                    else:
+                        print('=========동일한 애니메이션 처음부터 실행===========',)
+                        self.matched_frame_index = nowAnimInfo['start']
+                        # self.isUpdated = True
+
+                else: # if DIFF_ANIMATION or (SAME_ANIMATION and IDX_DIFF_OVER_10):
+                    # self.inertialize = True
+                    self.isUpdated = True
+                    self.matched_frame_index = newPoseIndex    
             
             # # bruteforce
             # min = 2147483647
@@ -172,17 +167,17 @@ class MotionMatcher:
             # self.matched_frame_index = features[findIndex]['poseIndex']
             # self.featureIndex = findIndex
 
-                
+        # 계속 실행
         else: 
             self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
-            self.inertialize = False
+            # self.inertialize = False
             # self.isUpdated = True
 
         targetPose = poses[self.matched_frame_index] # for Inertialization
 
         # Inertialization
         self.inertialization = Inertialization()
-        if self.inertialize:
+        if self.isUpdated:
             self.inertialization.poseTransition(sourcePose, targetPose)
             self.inertialization.update(targetPose, self.inertializeHalfLife, self.inertializeDeltaTime)
 
@@ -195,7 +190,7 @@ class MotionMatcher:
             # 힙 조인트 위치정보 업데이트                
             if joint == 'mixamorig2:Hips': 
                 if self.isUpdated: # update time 16까지는 괜찮음
-                    print('여기 들어왔니?')
+                    # print('여기 들어왔니?')
                     self.firstPoseRotation = jointRotation # 초기 pose의 rotation
                     self.firstPoseLocation = jointLocation # 초기 pose의 location
                     # 현재 힙 정보 저장해두기
@@ -241,7 +236,7 @@ class MotionMatcher:
                 bone_struct[joint].rotation_quaternion = TPOSE_NECK_ROTATION
             # 나머지 조인트 위치정보 업데이트
             else: 
-                if self.inertialize:
+                if self.isUpdated: # == inertialize
                     jointRotation = self.inertialization.inertializedRotations[index]
                 bone_struct[joint].location = jointLocation            
                 bone_struct[joint].rotation_quaternion = jointRotation
@@ -249,5 +244,6 @@ class MotionMatcher:
         # 시간 업데이트
         self.time = (self.time + 1) % (UPDATE_TIME + 1)
         self.isUpdated = False
+        # self.inertialize = False
 
      

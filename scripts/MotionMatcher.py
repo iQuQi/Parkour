@@ -175,6 +175,7 @@ class MotionMatcher:
                 
         else: 
             self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
+            self.inertialize = False
             # self.isUpdated = True
 
         targetPose = poses[self.matched_frame_index] # for Inertialization
@@ -189,10 +190,7 @@ class MotionMatcher:
         # 해당하는 프레임으로 애니메이션 교체 & 재생 
         for (index, joint) in enumerate(joint_names):
             # 조인트 회전 정보 업데이트
-            if self.inertialize:
-                jointRotation = self.inertialization.inertializedRotations[index]
-            else:    
-                jointRotation = mathutils.Quaternion(poses[self.matched_frame_index]['joints'][joint]['rotation'])
+            jointRotation = mathutils.Quaternion(poses[self.matched_frame_index]['joints'][joint]['rotation'])
             jointLocation = poses[self.matched_frame_index]['joints'][joint]['location']
             # 힙 조인트 위치정보 업데이트                
             if joint == 'mixamorig2:Hips': 
@@ -224,13 +222,9 @@ class MotionMatcher:
                     self.radian_xz = joint_xz - bone_xz
                     obj.rotation_euler.rotate(mathutils.Euler([0.0,0.0,-self.radian_xz],'XYZ'))
 
-                # inertialization
-                if self.inertialization:
-                    bone_struct[joint].location = substractArray3(self.inertialization.inertializedHips, self.firstPoseLocation) # 수평방향 고정
-                    bone_struct[joint].rotation_quaternion = jointRotation
-                else:
-                    bone_struct[joint].location = substractArray3(jointLocation, self.firstPoseLocation) # 수평방향 고정
-                    bone_struct[joint].rotation_quaternion = jointRotation
+                # inertialization 무시
+                bone_struct[joint].location = substractArray3(jointLocation, self.firstPoseLocation) # 수평방향 고정
+                bone_struct[joint].rotation_quaternion = jointRotation
 
                 for index in range(5): # 0~4까지
                     featurePoint = bpy.data.objects['Feature'+ str(index+1)]
@@ -247,6 +241,8 @@ class MotionMatcher:
                 bone_struct[joint].rotation_quaternion = TPOSE_NECK_ROTATION
             # 나머지 조인트 위치정보 업데이트
             else: 
+                if self.inertialize:
+                    jointRotation = self.inertialization.inertializedRotations[index]
                 bone_struct[joint].location = jointLocation            
                 bone_struct[joint].rotation_quaternion = jointRotation
         

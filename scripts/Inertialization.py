@@ -5,13 +5,13 @@ import bpy
 from utils.common import *
 
 class Inertialization:
-    inertializedRotations = mathutils.Quaternion()
-    inertializedAngularVelocities = mathutils.Vector()
+    inertializedRotations = [mathutils.Quaternion()]
+    inertializedAngularVelocities = [mathutils.Vector()]
     inertializedHips = mathutils.Vector()
     inertializedHipsVelocity = mathutils.Vector()
 
-    offsetRotations = mathutils.Quaternion()
-    offsetAngularVelocities = mathutils.Vector()
+    offsetRotations = [mathutils.Quaternion()]
+    offsetAngularVelocities = [mathutils.Vector()]
     offsetHips = mathutils.Vector()
     offsetHipsVelocity = mathutils.Vector()
 
@@ -87,7 +87,7 @@ class Inertialization:
     # Offsets are in/out since we may start a inertialization in the middle of another inertialization.
     # </summary>
     def abs(self, q):
-        if q.w < 0.0: return mathutils.Quaternion([-q.x, -q.y, -q.z, -q.w]) 
+        if q.w < 0.0: return mathutils.Quaternion([-q.w, -q.x, -q.y, -q.z]) 
         else: return q
 
     def inertializeJointTransition(self, sourceRot, sourceAngularVel,
@@ -185,12 +185,12 @@ class Inertialization:
     def exp(self, angleAxis, eps = 1e-8):
         halfangle = np.sqrt(angleAxis.x * angleAxis.x + angleAxis.y * angleAxis.y + angleAxis.z * angleAxis.z)
         if (halfangle < eps):
-            return mathutils.Quaternion([angleAxis.x, angleAxis.y, angleAxis.z, 1.0]).normalized()
+            return mathutils.Quaternion([1.0, angleAxis.x, angleAxis.y, angleAxis.z]).normalized()
         
         else:
             c = np.cos(halfangle)
             s = np.sin(halfangle) / halfangle
-            return mathutils.Quaternion([s * angleAxis.x, s * angleAxis.y, s * angleAxis.z, c])
+            return mathutils.Quaternion([c, s * angleAxis.x, s * angleAxis.y, s * angleAxis.z])
         
         
         

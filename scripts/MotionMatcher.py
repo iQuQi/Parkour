@@ -50,7 +50,7 @@ class MotionMatcher:
         for i in range(len(features)-1):
             #point = feature['rootSpeed'].copy()
             point = []
-            point += (np.array(features[i]['footLocation']['left'])/1.5).tolist() + (np.array(features[i]['footLocation']['right'])/1.5).tolist() # foot 추가
+            point += (np.array(features[i]['footLocation']['left'])).tolist() + (np.array(features[i]['footLocation']['right'])).tolist() # foot 추가
             point += (np.array(features[i]['footSpeed']['left'])/2).tolist() + (np.array(features[i]['footSpeed']['right'])/2).tolist() # foot 추가
 
             for location in features[i]['trajectoryLocation']:
@@ -214,6 +214,7 @@ class MotionMatcher:
                     elif bone_vector[0]<0:
                         bone_xz = np.arctan(bone_vector[2]/bone_vector[0]) + np.deg2rad(180)
 
+                    
                     self.radian_xz = joint_xz - bone_xz
                     obj.rotation_euler.rotate(mathutils.Euler([0.0,0.0,-self.radian_xz],'XYZ'))
 

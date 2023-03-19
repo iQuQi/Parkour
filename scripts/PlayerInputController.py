@@ -83,6 +83,11 @@ class ModalOperator(bpy.types.Operator):
         joint_names = bone_struct.keys()
         # self.motionMatcher.matched_frame_index = self.init_pose
 
+        for index in range(len(poses)-1):
+            if poses[index]['animInfo'][0]['name'] == 'Idle.fbx':
+                self.init_pose = index 
+                break
+
         for joint in joint_names:
             jointRotation = poses[self.init_pose]['joints'][joint]['rotation']
             jointLocation = poses[self.init_pose]['joints'][joint]['location']
@@ -151,7 +156,8 @@ class ModalOperator(bpy.types.Operator):
             
             if self.idle and not self.KEY_MAP[RUN]:
                 self.motionMatcher.time = UPDATE_TIME
-                for i in range(10):
+                self.prevInput = [-1,-1,-1]
+                for i in range(2):
                     queryVector = self.createQueryVector(input_direction)
                     self.motionMatcher.updateMatchedMotion(queryVector, self.KEY_MAP[CROUCH], self.KEY_MAP[JUMP], self.init_pose)
 
@@ -225,7 +231,7 @@ class ModalOperator(bpy.types.Operator):
         # print('궤적 예측 포인트-Local', self.calculateStandard(trajectoryLocation, features[-1]['mean']['hips']['location'], features[-1]['std']['hips']['location']))
         # return rootVelocity + LfootVelocity + RfootVelocity + LfootLocation + RfootLocation + trajectoryLocation + trajectoryDirection
         # return LfootLocation + RfootLocation + (np.array(trajectoryLocation)*5).tolist()
-        return (np.array(LfootLocation)/1.5).tolist() + (np.array(RfootLocation)/1.5).tolist() + (np.array(LfootVelocity)/2).tolist() + (np.array(RfootVelocity)/2).tolist() + (np.array(trajectoryLocation)*5).tolist()
+        return (np.array(LfootLocation)).tolist() + (np.array(RfootLocation)).tolist() + (np.array(LfootVelocity)/2).tolist() + (np.array(RfootVelocity)/2).tolist() + (np.array(trajectoryLocation)*5).tolist()
         # return self.calculateStandard(LfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) +self.calculateStandard(RfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) + self.calculateStandard(trajectoryLocation, features[-1]['mean']['hips']['location'], features[-1]['std']['hips']['location'])
         # return self.calculateStandard(LfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) +self.calculateStandard(RfootLocation, features[-1]['mean']['Lfoot']['tailLocation'], features[-1]['std']['Lfoot']['tailLocation']) + (np.array(trajectoryLocation)*10).tolist()
         # return trajectoryLocation

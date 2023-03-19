@@ -65,6 +65,7 @@ class ModalOperator(bpy.types.Operator):
 
     first = True
     prevInput = [-1, -1, -1]
+    idle = True
 
     def __init__(self):
         print("Start")
@@ -72,6 +73,7 @@ class ModalOperator(bpy.types.Operator):
             if poses[index]['animInfo'][0]['name'] == 'Idle.fbx':
                 self.init_pose = index
                 self.motionMatcher = MotionMatcher(index)
+                break
 
 
     def __del__(self):
@@ -79,7 +81,7 @@ class ModalOperator(bpy.types.Operator):
         obj = bpy.context.object
         bone_struct = obj.pose.bones
         joint_names = bone_struct.keys()
-        self.motionMatcher.matched_frame_index = self.init_pose
+        # self.motionMatcher.matched_frame_index = self.init_pose
 
         for joint in joint_names:
             jointRotation = poses[self.init_pose]['joints'][joint]['rotation']
@@ -98,11 +100,16 @@ class ModalOperator(bpy.types.Operator):
         return {'FINISHED'}
     
     def setMove(self, type, value):
+        print('이벤트 확인', type, value)
+        
         if self.KEY_MAP.keys().__contains__(type):         
             if value == 'PRESS':
                 self.KEY_MAP[type] = True
+                self.idle = False
             elif value == 'RELEASE':
                 self.KEY_MAP[type] = False
+                self.idle = True
+
 
     def calculateStandard(self, data, mean, std):
         locationList = []
@@ -133,23 +140,22 @@ class ModalOperator(bpy.types.Operator):
         # print('INPUT:', input_direction)
         
         if np.linalg.norm(input_direction) > 0.0: 
+            self.idle = False
             if not np.array_equal(self.prevInput, input_direction):
                 print('같음 ', self.prevInput, input_direction)
                 self.motionMatcher.time = UPDATE_TIME
             queryVector = self.createQueryVector(input_direction)
-            self.motionMatcher.updateMatchedMotion(queryVector, self.KEY_MAP[CROUCH], self.KEY_MAP[JUMP])
+            self.motionMatcher.updateMatchedMotion(queryVector, self.KEY_MAP[CROUCH], self.KEY_MAP[JUMP], -1)
             self.prevInput = input_direction
         else:
-            if not self.KEY_MAP[RUN]:
-                print(input_direction, self.prevInput)
-                if self.prevInput[Z] < 0:
-                    input_direction = np.array(self.prevInput) * 0.05
-                else: input_direction = np.array(self.prevInput) * 0.005
-                
-                queryVector = self.createQueryVector(input_direction)
-                self.motionMatcher.updateMatchedMotion(queryVector, self.KEY_MAP[CROUCH], self.KEY_MAP[JUMP], self.init_pose)
-                
-            self.motionMatcher.time = UPDATE_TIME
+            
+            if self.idle and not self.KEY_MAP[RUN]:
+                self.motionMatcher.time = UPDATE_TIME
+                for i in range(20):
+                    queryVector = self.createQueryVector(input_direction)
+                    self.motionMatcher.updateMatchedMotion(queryVector, self.KEY_MAP[CROUCH], self.KEY_MAP[JUMP], self.init_pose)
+
+            
         
         if self.first: self.first = False
 
@@ -237,18 +243,18 @@ class ModalOperator(bpy.types.Operator):
         return self.desiredLocation+(change+temp)*exp
 
     def modal(self, context, event):
-        if not event.is_repeat:
-            self.weight = 0.3
         if event.type == 'LEFTMOUSE':  # Confirm
             return {'FINISHED'}
         elif event.type in {'RIGHTMOUSE', 'ESC'}:  # Cancel
-            context.object.location.x = self.init_loc_x
             return {'CANCELLED'}
+        elif event.type == 'MOUSEMOVE':
+            pass
         else:
             self.setMove(event.type, event.value) # Apply
-            
-        self.move()
 
+        if event.type not in {'MOUSEMOVE', 'INBETWEEN_MOUSEMOVE'} or self.first:
+            self.move()
+        
         return {'RUNNING_MODAL'}
 
     def invoke(self, context, event):

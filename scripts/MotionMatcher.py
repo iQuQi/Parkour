@@ -94,32 +94,29 @@ class MotionMatcher:
         nowAnimInfo = poses[self.matched_frame_index]['animInfo'][0]
         sourcePose = poses[self.matched_frame_index] # for Inertialization
 
-        if stopIndex!=-1:
-            self.matched_frame_index = stopIndex
-            self.isUpdated = True
+        
+
           
         # 매칭 프레임 찾기
-        elif self.time == UPDATE_TIME or self.matched_frame_index + 1 > nowAnimInfo['end']:
+        if self.time == UPDATE_TIME or self.matched_frame_index + 1 > nowAnimInfo['end']:
             # 쿼리벡터 넣어주기
-            distance, findIndex = self.tree.query(query)
-            # print('이게 포인트', features[findIndex]['trajectoryLocation'])
-            # print('트리에서 뽑은 값 : ', poses[self.matched_frame_index]['joints']['mixamorig2:LeftFoot']['tailLocation'], poses[self.matched_frame_index]['joints']['mixamorig2:RightFoot']['tailLocation'])
-            # print('쿼리...',query)
-
-            # self.matched_frame_index = random.randint(1,728)
-
-            # 이름이 같을 때
-            # if poses[self.matched_frame_index]['animInfo'][0]['index']<poses[self.matched_frame_index]['animInfo'][0]['end']-1 and poses[features[findIndex]['poseIndex']]['animInfo'][0]['name']==poses[self.matched_frame_index]['animInfo'][0]['name']:
-            #     self.matched_frame_index = self.matched_frame_index+1
-                
-            # else:
+            distance, findIndex = self.tree.query(query) # 트리에서 검색
             
             newPoseIndex = features[findIndex]['poseIndex']     
             newAnimInfo = poses[newPoseIndex]['animInfo'][0]
-            if (nowAnimInfo['name'] == 'Idle.fbx' or nowAnimInfo['name'] == 'Idle.fbx') and self.matched_frame_index + 1 == nowAnimInfo['end']:
-                print('=========stop 애니메이션 마지막 index===========')
-                self.stopEnd = True
-            else:
+            
+            # if stopIndex!=-1:
+            #     self.matched_frame_index = stopIndex
+            #     self.isUpdated = True
+            #     if self.matched_frame_index + 1 == nowAnimInfo['end']:
+            #         print('=========stop 애니메이션 마지막 index===========')
+            #         self.matched_frame_index = nowAnimInfo['start']
+            #     else:
+            #         self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
+            #         self.isUpdated = False
+                
+            #     print('matched frame index: ', self.matched_frame_index)
+            # else:
                 # inertialize 조건
                 # 1. 다른 애니메이션으로 전환될 때
                 # 2. 같은 애니메이션일 때, index 차이가 10이상일 때
@@ -127,24 +124,27 @@ class MotionMatcher:
 
                 # 자연스러운 전환을 위한 isupdate 조건
                 # 1.
-                DIFF_ANIMATION = nowAnimInfo['name'] != newAnimInfo['name']
-                SAME_ANIMATION = nowAnimInfo['name'] == newAnimInfo['name']
-                IDX_DIFF_UNDER_20 = np.abs(newPoseIndex - nowAnimInfo['index']) < 20
-                IDX_DIFF_OVER_20 = np.abs(newPoseIndex - nowAnimInfo['index']) >= 20
+            DIFF_ANIMATION = nowAnimInfo['name'] != newAnimInfo['name']
+            SAME_ANIMATION = nowAnimInfo['name'] == newAnimInfo['name']
+            IDX_DIFF_UNDER_20 = np.abs(newPoseIndex - nowAnimInfo['index']) < 20
+            IDX_DIFF_OVER_20 = np.abs(newPoseIndex - nowAnimInfo['index']) >= 20
 
-                if SAME_ANIMATION and IDX_DIFF_UNDER_20:
-                    if self.matched_frame_index + 1 <= nowAnimInfo['end']:
-                        print('=========동일한 애니메이션 계속 실행===========',)
-                        self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
-                    else:
-                        print('=========동일한 애니메이션 처음부터 실행===========',)
-                        self.matched_frame_index = nowAnimInfo['start']
-                        # self.isUpdated = True
-
-                else: # if DIFF_ANIMATION or (SAME_ANIMATION and IDX_DIFF_OVER_10):
-                    # self.inertialize = True
+            if SAME_ANIMATION and IDX_DIFF_UNDER_20:
+                if self.matched_frame_index + 1 <= nowAnimInfo['end']:
+                    print('=========동일한 애니메이션 계속 실행===========',)
+                    self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
+                else:
+                    print('=========동일한 애니메이션 처음부터 실행===========',)
+                    self.matched_frame_index = nowAnimInfo['start']
                     self.isUpdated = True
-                    self.matched_frame_index = newPoseIndex    
+            
+            elif stopIndex!=-1:
+                self.isUpdated = True
+                self.matched_frame_index = stopIndex
+            else: # if DIFF_ANIMATION or (SAME_ANIMATION and IDX_DIFF_OVER_10):
+                # self.inertialize = True
+                self.isUpdated = True
+                self.matched_frame_index = newPoseIndex    
             
             # # bruteforce
             # min = 2147483647

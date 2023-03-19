@@ -30,7 +30,7 @@ class Feature:
     root_speed,
     Rfoot_location, Rfoot_speed, 
     Lfoot_location, Lfoot_speed, 
-    trajectory_location, trajectory_direction, index):
+    trajectory_location, trajectory_direction, hip_height, index):
 
         # 속도
         self.rootSpeed = root_speed
@@ -41,7 +41,7 @@ class Feature:
 
         self.footLocation = {'left': Lfoot_location, 'right': Rfoot_location}
         self.footSpeed =  {'left': Lfoot_speed, 'right': Rfoot_speed}
-
+        self.hipHeight = hip_height
         self.poseIndex = index
 
         # TODO: 손 정보 추가
@@ -187,8 +187,10 @@ def poseDB2featureDB():
                                 global2local(FUTURE8['velocity'], M), global2local(FUTURE12['velocity'],M), 
                                 global2local(FUTURE16['velocity'], M)]
 
+        hip_height = NOW['location'][1]
+
         new_feature = Feature(global2local(root_velocity,M), Rfoot_location, Rfoot_velocity, Lfoot_location, 
-                        Lfoot_velocity, trajectory_location, trajectory_direction, ANIM_INFO['index'])
+                        Lfoot_velocity, trajectory_location, trajectory_direction, hip_height,ANIM_INFO['index'])
 
         # 각 파일에 들어갈 피쳐 배열에 추가
         features_npy.append(np.array(new_feature.__dict__))

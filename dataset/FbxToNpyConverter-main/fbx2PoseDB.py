@@ -33,10 +33,10 @@ class AnimInfo:
         self.index = index
 
 class Joint:
-    def __init__(self, location, rotation, angular_velocity, velocity, tail, tail_velocity):
+    def __init__(self, location, rotation, angular_velocity, velocity, local_tail, tail_velocity):
         self.location = location
         self.rotation = rotation
-        self.tailLocation = tail
+        self.tailLocation = local_tail
         self.tailVelocity = tail_velocity
         self.angularVelocity = angular_velocity
         self.velocity = velocity  

@@ -252,7 +252,7 @@ class ModalOperator(bpy.types.Operator):
         for index, point in enumerate(printPoint):
             bpy.data.objects['Point'+ str(index+1)].location = point
 
-        return [hipHeight/2] + (np.array(LfootLocation)).tolist() + (np.array(RfootLocation)).tolist() + (np.array(LfootVelocity)/2).tolist() + (np.array(RfootVelocity)/2).tolist() + (np.array(trajectoryLocation)*8).tolist() 
+        return [hipHeight/2] + (np.array(LfootLocation)).tolist() + (np.array(RfootLocation)).tolist() + (np.array(LfootVelocity)/2).tolist() + (np.array(RfootVelocity)/2).tolist() + (np.array(trajectoryLocation)*7).tolist() 
       
 
     def calculateFutureTrajectory(self,timeDelta):

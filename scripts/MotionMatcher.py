@@ -49,7 +49,7 @@ class MotionMatcher:
         point_list = []
         for i in range(len(features)-1):
             #point = feature['rootSpeed'].copy()
-            point = []
+            point = [features[i]['hipHeight']/2]
             point += (np.array(features[i]['footLocation']['left'])).tolist() + (np.array(features[i]['footLocation']['right'])).tolist() # foot 추가
             point += (np.array(features[i]['footSpeed']['left'])/2).tolist() + (np.array(features[i]['footSpeed']['right'])/2).tolist() # foot 추가
 
@@ -58,7 +58,7 @@ class MotionMatcher:
                 
                 # point += [location[0]/100, location[1]/100, location[2]/100]
                 
-                point += (np.array(location)/20).tolist()
+                point += (np.array(location)/15).tolist()
 
             point_list.append(point)
         
@@ -82,15 +82,11 @@ class MotionMatcher:
     def getCurrentPose(self):
         return poses[self.matched_frame_index]['joints']
 
-    def updateMatchedMotion(self, query, crouch, jump, stopIndex=-1):
-        # print('Function CALL - UpdateMatchedMotion:   ', query)
+    def updateMatchedMotion(self, query, specialIndex=-1):
         obj = bpy.data.objects['Armature']
-
         bone_struct = obj.pose.bones
-        #print('HEAD:', bone_struct['mixamorig2:LeftFoot'].tail)
-
         joint_names = bone_struct.keys()
-        
+    
         nowAnimInfo = poses[self.matched_frame_index]['animInfo'][0]
         sourcePose = poses[self.matched_frame_index] # for Inertialization
 
@@ -104,7 +100,7 @@ class MotionMatcher:
             
             newPoseIndex = features[findIndex]['poseIndex']     
             newAnimInfo = poses[newPoseIndex]['animInfo'][0]
-            
+
             # if stopIndex!=-1:
             #     self.matched_frame_index = stopIndex
             #     self.isUpdated = True
@@ -128,8 +124,9 @@ class MotionMatcher:
             SAME_ANIMATION = nowAnimInfo['name'] == newAnimInfo['name']
             IDX_DIFF_UNDER_20 = np.abs(newPoseIndex - nowAnimInfo['index']) < 20
             IDX_DIFF_OVER_20 = np.abs(newPoseIndex - nowAnimInfo['index']) >= 20
+            WINNING = nowAnimInfo['name'] == 'Victory Idle.fbx' and specialIndex!=-1
 
-            if SAME_ANIMATION and IDX_DIFF_UNDER_20:
+            if (SAME_ANIMATION and IDX_DIFF_UNDER_20) or WINNING:
                 if self.matched_frame_index + 1 <= nowAnimInfo['end']:
                     print('=========동일한 애니메이션 계속 실행===========',)
                     self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
@@ -138,9 +135,9 @@ class MotionMatcher:
                     self.matched_frame_index = nowAnimInfo['start']
                     self.isUpdated = True
             
-            elif stopIndex!=-1:
+            elif specialIndex!=-1:
                 self.isUpdated = True
-                self.matched_frame_index = stopIndex
+                self.matched_frame_index = specialIndex
             else: # if DIFF_ANIMATION or (SAME_ANIMATION and IDX_DIFF_OVER_10):
                 # self.inertialize = True
                 self.isUpdated = True
@@ -170,8 +167,6 @@ class MotionMatcher:
         # 계속 실행
         else: 
             self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
-            # self.inertialize = False
-            # self.isUpdated = True
 
         targetPose = poses[self.matched_frame_index] # for Inertialization
 
@@ -198,10 +193,10 @@ class MotionMatcher:
                     obj.location[2] = 0
                     
                     bone_origin = mathutils.Quaternion(bone_struct[joint].rotation_quaternion).to_matrix()
-                    bone_vector = bone_origin[0]+bone_origin[1]+bone_origin[2]
+                    bone_vector = bone_origin[:][0]+bone_origin[:][1]+bone_origin[:][2]
 
                     joint_origin = mathutils.Quaternion(jointRotation).to_matrix()
-                    joint_vector = joint_origin[0]+joint_origin[1]+joint_origin[2]
+                    joint_vector = joint_origin[:][0]+joint_origin[:][1]+joint_origin[:][2]
 
                     joint_xz = 0
                     bone_xz = 0
@@ -228,7 +223,7 @@ class MotionMatcher:
                         poseLocation = poses[self.matched_frame_index + index*4]['joints'][joint]['location']
                         diff = obj.rotation_euler.to_matrix() @ mathutils.Vector(substractArray3(poseLocation, self.firstPoseLocation))
                         featurePoint.hide_viewport = False
-                        featurePoint.location = [diff[0]/100 + obj.location[0], diff[1]/100 + obj.location[1], 0]
+                        featurePoint.location = [diff[0]/100 + obj.location[0], diff[1]/100 + obj.location[1], diff[2]/100 + obj.location[2]]
                     else:
                         featurePoint.hide_viewport = True
 

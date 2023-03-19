@@ -5,25 +5,27 @@ import bpy
 from utils.common import *
 
 class Inertialization:
-    inertializedRotations = [mathutils.Quaternion()]
-    inertializedAngularVelocities = [mathutils.Vector()]
+    inertializedRotations = {}
+    inertializedAngularVelocities = {}
     inertializedHips = mathutils.Vector()
     inertializedHipsVelocity = mathutils.Vector()
 
-    offsetRotations = [mathutils.Quaternion()]
-    offsetAngularVelocities = [mathutils.Vector()]
+    offsetRotations = {}
+    offsetAngularVelocities = {}
     offsetHips = mathutils.Vector()
     offsetHipsVelocity = mathutils.Vector()
 
     def __init__(self):
-        obj = bpy.context.object
+        obj = bpy.data.objects['Armature']
         bone_struct = obj.pose.bones
         joint_names = bone_struct.keys()
         numJoints = len(joint_names)
-        self.inertializedRotations = [mathutils.Quaternion() for i in range(numJoints)]
-        self.inertializedAngularVelocities = [mathutils.Vector() for i in range(numJoints)]
-        self.offsetRotations = [mathutils.Quaternion() for i in range(numJoints)]
-        self.offsetAngularVelocities = [mathutils.Vector() for i in range(numJoints)]
+
+        for joint in joint_names:
+            self.inertializedRotations[joint] = mathutils.Quaternion()
+            self.inertializedAngularVelocities[joint] = mathutils.Vector()
+            self.offsetRotations[joint] = mathutils.Quaternion()
+            self.offsetAngularVelocities[joint] = mathutils.Vector()
 
     # <summary>
     # It takes as input the current state of the source pose and the target pose.
@@ -32,10 +34,9 @@ class Inertialization:
 
     def poseTransition(self, sourcePose, targetPose):
         # Set up the inertialization for joint local rotations (no simulation bone)
-        for i in range(len(sourcePose['joints'].keys())):
-            joint_names = list(sourcePose['joints'].keys())
-            sourcePoseJoint = sourcePose['joints'][joint_names[i]]
-            targetPoseJoint = targetPose['joints'][joint_names[i]]
+        for joint in sourcePose['joints'].keys():
+            sourcePoseJoint = sourcePose['joints'][joint]
+            targetPoseJoint = targetPose['joints'][joint]
 
             sourceJointRotation = mathutils.Quaternion(sourcePoseJoint['rotation'])
             targetJointRotation = mathutils.Quaternion(targetPoseJoint['rotation'])
@@ -43,7 +44,7 @@ class Inertialization:
             targetJointAngularVelocity = mathutils.Vector(targetPoseJoint['angularVelocity'])
             self.inertializeJointTransition(sourceJointRotation, sourceJointAngularVelocity, 
                                             targetJointRotation, targetJointAngularVelocity,
-                                            index = i) # offsetRotations[i], offsetAngularVelocities[i]
+                                            key = joint) # offsetRotations[i], offsetAngularVelocities[i]
         
         # Set up the inertialization for hips
         sourceHips = sourcePose['joints']['mixamorig2:Hips']
@@ -63,15 +64,13 @@ class Inertialization:
     # </summary>
     def update(self, targetPose, halfLife, deltaTime):
         # Update the inertialization for joint local rotations
-        for i in range(len(targetPose['joints'].keys())):
-            joint_names = list(targetPose['joints'].keys())
-
-            targetPoseJoint = targetPose['joints'][joint_names[i]]
+        for joint in targetPose['joints'].keys():
+            targetPoseJoint = targetPose['joints'][joint]
             targetJointRotation = mathutils.Quaternion(targetPoseJoint['rotation'])
             targetJointAngularVelocity = mathutils.Vector(targetPoseJoint['angularVelocity'])
             self.inertializeJointUpdate(targetJointRotation, targetJointAngularVelocity,
                                         halfLife, deltaTime,
-                                        index = i)
+                                        key = joint)
         
         # Update the inertialization for hips
         targetHips = targetPose['joints']['mixamorig2:Hips']
@@ -92,9 +91,9 @@ class Inertialization:
 
     def inertializeJointTransition(self, sourceRot, sourceAngularVel,
                                     targetRot, targetAngularVel,
-                                    index): # offsetRot, offsetAngularvel
-        self.offsetRotations[index] = (self.abs((targetRot.to_matrix().inverted() @ (sourceRot.to_matrix() @ self.offsetRotations[index].to_matrix())).to_quaternion())).normalized()
-        self.offsetAngularVelocities[index] = (sourceAngularVel + self.offsetAngularVelocities[index]) - targetAngularVel
+                                    key): # offsetRot, offsetAngularvel
+        self.offsetRotations[key] = (self.abs((targetRot.to_matrix().inverted() @ (sourceRot.to_matrix() @ self.offsetRotations[key].to_matrix())).to_quaternion())).normalized()
+        self.offsetAngularVelocities[key] = (sourceAngularVel + self.offsetAngularVelocities[key]) - targetAngularVel
 
     def inertializeJointTransition4Hips(self, source, sourceVel,
                                         target, targetVel,
@@ -107,11 +106,11 @@ class Inertialization:
     # </summary>
     def inertializeJointUpdate(self, targetRot, targetAngularVel,
                                 halfLife, deltaTime,
-                                index): 
+                                key): 
         # offsetRot = offsetRotations, offsetAngularVel = offsetAngularVelocities, newRot = inertializedRotations, newAngularVel = inertializedAngularVelocities
-        self.decaySpringDamperImplicit(index, halfLife, deltaTime)
-        self.inertializedRotations[index] = (targetRot.to_matrix() @ self.offsetRotations[index].to_matrix()).to_quaternion()
-        self.inertializedAngularVelocities[index] = targetAngularVel @ self.offsetAngularVelocities[index]
+        self.decaySpringDamperImplicit(key, halfLife, deltaTime)
+        self.inertializedRotations[key] = (targetRot.to_matrix() @ self.offsetRotations[key].to_matrix()).to_quaternion()
+        self.inertializedAngularVelocities[key] = targetAngularVel @ self.offsetAngularVelocities[key]
         
     def inertializeJointUpdate4Hips(self, target, targetVel,
                                     halfLife, deltaTime,
@@ -127,16 +126,16 @@ class Inertialization:
     # <summary>
     # Special type of SpringDamperImplicit when the desired rotation is the identity
     # </summary>
-    def decaySpringDamperImplicit(self, index, halfLife, deltaTime):
-        rot = self.offsetRotations[index]
-        angularVel = self.offsetAngularVelocities[index]
+    def decaySpringDamperImplicit(self, key, halfLife, deltaTime):
+        rot = self.offsetRotations[key]
+        angularVel = self.offsetAngularVelocities[key]
         y = self.halfLifeToDamping(halfLife) / 2.0; # this could be precomputed
         j0 = self.quaternionToScaledAngleAxis(rot)
         j1 = angularVel + j0 * y
         eyedt = self.fastNEgeExp(y * deltaTime) # this could be precomputed if several agents use it the same frame
 
-        self.offsetRotations[index] = self.quaternionFromScaledAngleAxis(eyedt * j0 + j1 * deltaTime)
-        self.offsetAngularVelocities[index] = (eyedt * (angularVel - j1 * y * deltaTime))
+        self.offsetRotations[key] = self.quaternionFromScaledAngleAxis(eyedt * j0 + j1 * deltaTime)
+        self.offsetAngularVelocities[key] = (eyedt * (angularVel - j1 * y * deltaTime))
     
     # <summary>
     # Special type of SpringDamperImplicit when the desired position is 0

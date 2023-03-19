@@ -78,7 +78,7 @@ class ModalOperator(bpy.types.Operator):
 
     def __del__(self):
         print("End")      
-        obj = bpy.context.object
+        obj = bpy.data.objects['Armature']
         bone_struct = obj.pose.bones
         joint_names = bone_struct.keys()
         # self.motionMatcher.matched_frame_index = self.init_pose
@@ -128,12 +128,12 @@ class ModalOperator(bpy.types.Operator):
             input_direction[Z] += (-1*GOAL) 
         if self.KEY_MAP['LEFT_ARROW']:
             input_direction[X] += GOAL
-            if input_direction[Z]==0: input_direction[Z] += GOAL/2
-            else: input_direction[Z] -= GOAL/2
+            if input_direction[Z]>0: input_direction[Z] -= GOAL/2
+            else: input_direction[Z] += GOAL/2
         if self.KEY_MAP['RIGHT_ARROW']:
             input_direction[X] += (-1*GOAL) 
-            if input_direction[Z]==0: input_direction[Z] += GOAL/2
-            else: input_direction[Z] -= GOAL/2
+            if input_direction[Z]>0: input_direction[Z] -= GOAL/2
+            else: input_direction[Z] += GOAL/2
         if self.KEY_MAP[RUN]:
             input_direction *= 2.5
 
@@ -151,7 +151,7 @@ class ModalOperator(bpy.types.Operator):
             
             if self.idle and not self.KEY_MAP[RUN]:
                 self.motionMatcher.time = UPDATE_TIME
-                for i in range(20):
+                for i in range(10):
                     queryVector = self.createQueryVector(input_direction)
                     self.motionMatcher.updateMatchedMotion(queryVector, self.KEY_MAP[CROUCH], self.KEY_MAP[JUMP], self.init_pose)
 
@@ -160,7 +160,7 @@ class ModalOperator(bpy.types.Operator):
         if self.first: self.first = False
 
     def createQueryVector(self, input_direction):
-        obj = bpy.context.object
+        obj = bpy.data.objects['Armature']
         bone_struct = obj.pose.bones
         boneLocation = obj.rotation_euler.to_matrix() @ mathutils.Vector([bone_struct['mixamorig2:Hips'].location[0]/100,
                                                                             bone_struct['mixamorig2:Hips'].location[1]/(100),

@@ -84,7 +84,7 @@ class MotionMatcher:
 
     def updateMatchedMotion(self, query, crouch, jump, stopIndex=-1):
         # print('Function CALL - UpdateMatchedMotion:   ', query)
-        obj = bpy.context.object
+        obj = bpy.data.objects['Armature']
 
         bone_struct = obj.pose.bones
         #print('HEAD:', bone_struct['mixamorig2:LeftFoot'].tail)
@@ -183,7 +183,7 @@ class MotionMatcher:
 
         print('애니메이션 이름 : ', poses[self.matched_frame_index]['animInfo'][0]['name'], poses[self.matched_frame_index]['animInfo'][0]['index'])
         # 해당하는 프레임으로 애니메이션 교체 & 재생 
-        for (index, joint) in enumerate(joint_names):
+        for joint in joint_names:
             # 조인트 회전 정보 업데이트
             jointRotation = mathutils.Quaternion(poses[self.matched_frame_index]['joints'][joint]['rotation'])
             jointLocation = poses[self.matched_frame_index]['joints'][joint]['location']
@@ -237,7 +237,7 @@ class MotionMatcher:
             # 나머지 조인트 위치정보 업데이트
             else: 
                 if self.isUpdated: # == inertialize
-                    jointRotation = self.inertialization.inertializedRotations[index]
+                    jointRotation = self.inertialization.inertializedRotations[joint]
                 bone_struct[joint].location = jointLocation            
                 bone_struct[joint].rotation_quaternion = jointRotation
         

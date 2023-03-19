@@ -58,7 +58,7 @@ class MotionMatcher:
                 
                 # point += [location[0]/100, location[1]/100, location[2]/100]
                 
-                point += (np.array(location)/15).tolist()
+                point += (np.array(location)/15.5).tolist()
 
             point_list.append(point)
         

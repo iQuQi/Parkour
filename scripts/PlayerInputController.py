@@ -156,14 +156,17 @@ class ModalOperator(bpy.types.Operator):
             if input_direction[Z]>0: input_direction[Z] -= GOAL/2
             else: input_direction[Z] += GOAL/2
 
-        if self.KEY_MAP[RUN]:
-            input_direction *= 2.5
+
         if self.KEY_MAP[CROUCH]:
             if input_direction[Z] < 0: input_direction[Z] -= GOAL
             elif input_direction[Z] > 0 : input_direction[X] += GOAL/3
-        if self.KEY_MAP[JUMP]:
+        elif self.KEY_MAP[JUMP]:
             input_direction = np.array([0, GOAL*3, input_direction[Z]/3])
             if input_direction[Z] < 0: input_direction[Z] -= GOAL*3
+        else:
+            if self.KEY_MAP[RUN]:
+                input_direction *= 2.5
+
 
         if not np.array_equal(self.prevInput, input_direction):
                 self.motionMatcher.time = UPDATE_TIME

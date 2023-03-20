@@ -26,7 +26,6 @@ class QueryVector:
         self.rootSpeed = rootSpeed
 
         # 루트의 미래+과거 궤적  ====> 과거 -> 현재 -> 미래 (4개)
-        # TODO 정사영 시켜야 함
         self.trajectoryLocation = trajectoryLocation # [-10, -5, 0, 5, 10, 20]
         self.trajectoryDirection = trajectoryDirection
 
@@ -34,16 +33,7 @@ class QueryVector:
         self.footSpeed =  {'left': LfootSpeed, 'right': RfootSpeed}
 
         # TODO: 손 정보 추가
-    
-    def toString(self):
-        # print('--- 쿼리 벡터 정보 출력하기 ---')
-        # print('rootSpeed:', self.rootSpeed)
-        # print('trajectoryLocation:', self.trajectoryLocation)
-        # print('trajectoryDirection:', self.trajectoryDirection)
-        # print('footLocation:', self.footLocation)
-        # print('footSpeed:', self.footSpeed)
-        # print('-------------------------')
-        print()
+
 
 
 class ModalOperator(bpy.types.Operator):
@@ -57,24 +47,29 @@ class ModalOperator(bpy.types.Operator):
     nowVelocity = -1
     desiredLocation = [0,0,0] 
     smoothTime = 1    # 최대 속도일 때, 목표물에 도달하는 예상 시간
+
+    #Special pose index
     init_pose = -1
     finish_pose = -1
     crouch_init_pose = -1
     jumping_down_pose = -1
-    prevVelocity = [0,-1,0] 
+
     
     # 모션 매쳐 객체
     motionMatcher = ''
 
     first = True
     prevInput = [-1, -1, -1]
+    prevVelocity = [0,-1,0] 
     idle = True
 
+    # 생성자
     def __init__(self):
         print("Start")
         self.find_fix_pose()
 
 
+    # special pose index 찾는 함수 (기본 초기화 포즈/crouch 초기화 포즈/점프 초기화 포즈/승리 포즈)
     def find_fix_pose(self):
         for index in range(len(poses)-1):
             if self.init_pose != -1 and self.finish_pose != -1 and self.crouch_init_pose != -1 and self.jumping_down_pose != -1:
@@ -91,16 +86,15 @@ class ModalOperator(bpy.types.Operator):
                 self.jumping_down_pose = index
 
 
-
-
+    # 소멸자
     def __del__(self):
         print("End")      
         obj = bpy.data.objects['Armature']
         bone_struct = obj.pose.bones
         joint_names = bone_struct.keys()
-        # self.motionMatcher.matched_frame_index = self.init_pose
         self.find_fix_pose()
 
+        # 조인트 별로 위치/회전 정보 초기화 & T 포즈 초기화
         for joint in joint_names:
             jointRotation = poses[self.init_pose]['joints'][joint]['rotation']
             jointLocation = poses[self.init_pose]['joints'][joint]['location']
@@ -109,10 +103,11 @@ class ModalOperator(bpy.types.Operator):
             obj.location = [0,0,0]
             obj.rotation_euler = DEFAULT_EULER
 
+        # 파란색/노란색 점들 원위치
         for index in range(5):
-            print('포인트 전체 초기화')
             bpy.data.objects['Point'+ str(index+1)].location = [0,index/-6,0]
             bpy.data.objects['Feature'+ str(index+1)].location = [0,index/-6.1,0]
+            
 
     def execute(self, context):
         return {'FINISHED'}
@@ -133,6 +128,7 @@ class ModalOperator(bpy.types.Operator):
             locationList.append((location-mean)/std)
         return locationList
 
+
     def move(self):
         obj = bpy.data.objects['Armature']
         bone_struct = obj.pose.bones
@@ -142,11 +138,14 @@ class ModalOperator(bpy.types.Operator):
         globalYLocation = boneLocation[1]+obj.location[1]
 
         input_direction = np.array([0.0, 0.0, 0.0])
+        # 상하
         if self.KEY_MAP['UP_ARROW']:
             input_direction[Z] += GOAL 
         if self.KEY_MAP['DOWN_ARROW']:
             input_direction[Z] += (-1*GOAL) 
 
+
+        # 좌우
         if self.KEY_MAP['LEFT_ARROW']:
             input_direction[X] += GOAL
             if input_direction[Z]>0: input_direction[Z] -= GOAL/2
@@ -156,28 +155,34 @@ class ModalOperator(bpy.types.Operator):
             if input_direction[Z]>0: input_direction[Z] -= GOAL/2
             else: input_direction[Z] += GOAL/2
 
-
+        # 웅크리기 / 점프 / 달리기
         if self.KEY_MAP[CROUCH]:
             if input_direction[Z] < 0: input_direction[Z] -= GOAL
             elif input_direction[Z] > 0 : input_direction[X] += GOAL/3
         elif self.KEY_MAP[JUMP]:
             input_direction = np.array([0, GOAL*3, input_direction[Z]/3])
             if input_direction[Z] < 0: input_direction[Z] -= GOAL*3
-        else:
-            if self.KEY_MAP[RUN]:
+        elif self.KEY_MAP[RUN]:
                 input_direction *= 2.5
 
 
+        # 이전 인풋과 현재 인풋이 다른 경우 즉시 교체
         if not np.array_equal(self.prevInput, input_direction):
                 self.motionMatcher.time = UPDATE_TIME
+
+        # 입력의 크기가 0보다 큰 경우 -> 유효한 쿼리 생성후 업데이트 함수 호출
         if np.linalg.norm(input_direction) > 0.0: 
             self.idle = False
             queryVector = self.createQueryVector(input_direction, self.KEY_MAP[CROUCH])
             self.motionMatcher.updateMatchedMotion(queryVector,  -1)
             self.prevInput = input_direction
+
+        # 골에 도착한 경우 세레모니 동작 
         elif globalYLocation < FINISH_LINE:
             queryVector = self.createQueryVector(input_direction)
             self.motionMatcher.updateMatchedMotion(queryVector, self.finish_pose)
+
+        # 웅크리기 상태로 인풋이 없는 경우 -> 웅크리기 초기화 자세 / 이외의 상태일 때 인풋이 없는 경우 -> 기본 초기화 자세
         else:
             queryVector = self.createQueryVector(input_direction)
             if self.KEY_MAP[CROUCH]: self.motionMatcher.updateMatchedMotion(queryVector, self.crouch_init_pose)
@@ -185,15 +190,16 @@ class ModalOperator(bpy.types.Operator):
                 self.motionMatcher.time = UPDATE_TIME
                 self.prevInput = [-1,-1,-1]
                 self.motionMatcher.updateMatchedMotion(queryVector, self.init_pose)
-            
-
-            
         
         if self.first: self.first = False
+
+
 
     def createQueryVector(self, input_direction, crouch = False):
         obj = bpy.data.objects['Armature']
         bone_struct = obj.pose.bones
+
+        # 캐릭터의 현재 글로벌 위치 및 축 구하기 => M update
         boneLocation = obj.rotation_euler.to_matrix() @ mathutils.Vector([bone_struct['mixamorig2:Hips'].location[0]/100,
                                                                             bone_struct['mixamorig2:Hips'].location[1]/(100),
                                                                             bone_struct['mixamorig2:Hips'].location[2]/100])
@@ -204,27 +210,28 @@ class ModalOperator(bpy.types.Operator):
             bone_struct['mixamorig2:Hips'].z_axis,
         ])
         updateM(globalLocation, axes)
+        
 
-        # 포즈 특징 채우기
+        # 포즈 DB에서 현재 포즈 정보 가져오기
         poseStructs = self.motionMatcher.getCurrentPose()
         poseDBVelocity = poseStructs['mixamorig2:Hips']['velocity']
-        #speed = np.linalg.norm([poseDBVelocity[0]/100,poseDBVelocity[1]/100,poseDBVelocity[2]/100]) 
+
+        # run 상태에 따라 스피드 조정
         speed = 1
-        if speed == 0: speed = ZERO_VELOCITY 
         if self.KEY_MAP[RUN]: speed *= 2
-        
-        # print('SPEED:', speed)
-        rootVelocity = speed*bone_struct['mixamorig2:Hips'].z_axis
-
-        RfootLocation = poseStructs['mixamorig2:RightFoot']['tailLocation']
-        RfootVelocity= poseStructs['mixamorig2:RightFoot']['tailVelocity']
-
-        LfootLocation = poseStructs['mixamorig2:LeftFoot']['tailLocation']
-        LfootVelocity= poseStructs['mixamorig2:LeftFoot']['tailVelocity']
-
+        # 웅크리기 상태에 따라 힙 위치 조정
         if crouch: hipHeight = -30
         else: hipHeight = -5
 
+        # 각종 포즈 정보들 채우기
+        rootVelocity = speed*bone_struct['mixamorig2:Hips'].z_axis
+        RfootLocation = poseStructs['mixamorig2:RightFoot']['tailLocation']
+        RfootVelocity= poseStructs['mixamorig2:RightFoot']['tailVelocity']
+        LfootLocation = poseStructs['mixamorig2:LeftFoot']['tailLocation']
+        LfootVelocity= poseStructs['mixamorig2:LeftFoot']['tailVelocity']
+
+
+        # 궤적 예측하기
         self.nowLocation = [0, 0, 0]
         self.nowVelocity = [rootVelocity[0],rootVelocity[1],rootVelocity[2]]
         self.desiredLocation =  input_direction
@@ -233,31 +240,26 @@ class ModalOperator(bpy.types.Operator):
         trajectoryLocation = []
         trajectoryDirection = []
        
-        for index in range(10):
-            updatePosition =  self.calculateFutureTrajectory(0.13)
-            # if index == 1:
-            #     printPoint.append([globalLocation[0], globalLocation[1],0])
-            #     trajectoryLocation.extend(self.nowLocation)
+        for index in range(10): # 5개의 점을 계산하기 위한 루프 -> 방향계산을 위해서 10개 구하고 홀수번째만 사용
+            updatePosition =  self.calculateFutureTrajectory(0.13) # 4/30 초 = 0.13
             if index % 2 != 0: 
                 nowRotationMatrix = mathutils.Quaternion(poses[self.motionMatcher.matched_frame_index]['joints']['mixamorig2:Hips']['rotation']).to_matrix() 
                 diff = obj.rotation_euler.to_matrix() @  mathutils.Matrix(nowRotationMatrix) @ mathutils.Vector(updatePosition)
-
                 printPoint.append([diff[0] + globalLocation[0], diff[1] + globalLocation[1],  diff[2] + globalLocation[2]])
-
                 trajectoryLocation.extend(updatePosition)
                 trajectoryDirection.extend(substractArray3(updatePosition,self.nowLocation))
                 self.desiredLocation = self.nowLocation + input_direction
-
-
             self.nowLocation = updatePosition
             
-
+        # 궤적 예측에 맞게 노란색 점 위치 설정
         for index, point in enumerate(printPoint):
             bpy.data.objects['Point'+ str(index+1)].location = point
+
 
         return [hipHeight/2] + (np.array(LfootLocation)).tolist() + (np.array(RfootLocation)).tolist() + (np.array(LfootVelocity)/2).tolist() + (np.array(RfootVelocity)/2).tolist() + (np.array(trajectoryLocation)*7).tolist() 
       
 
+    # spring damper 책 참고
     def calculateFutureTrajectory(self,timeDelta):
         omega = 2.0/self.smoothTime
         x = omega*timeDelta
@@ -266,6 +268,7 @@ class ModalOperator(bpy.types.Operator):
         temp = (self.nowVelocity+omega*change)*timeDelta
         self.nowVelocity = (self.nowVelocity-omega*temp)*exp
         return self.desiredLocation+(change+temp)*exp
+
 
     def modal(self, context, event):
         if event.type == 'LEFTMOUSE':  # Confirm
@@ -281,6 +284,7 @@ class ModalOperator(bpy.types.Operator):
         
         return {'RUNNING_MODAL'}
 
+
     def invoke(self, context, event):
         self.init_loc_x = context.object.location.x
         self.value = event.mouse_x
@@ -295,7 +299,6 @@ def menu_func(self, context):
     self.layout.operator(ModalOperator.bl_idname, text="Modal Operator")
 
 def invokeMotionMatcher():
-    # print('invokeMotionMatcher')
     print()
     
     

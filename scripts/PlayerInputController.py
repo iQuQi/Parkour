@@ -13,6 +13,8 @@ import mathutils
 JUMP = 'V'
 CROUCH = 'C'
 RUN = 'X'
+ROTATE_L = 'Z'
+ROTATE_R = 'B'
 ZERO_VELOCITY = 0.00000001
 
 
@@ -40,7 +42,7 @@ class ModalOperator(bpy.types.Operator):
     bl_idname = "object.modal_operator"
     bl_label = "Simple Modal Operator"
 
-    KEY_MAP = {'UP_ARROW': False, 'DOWN_ARROW': False, 'LEFT_ARROW': False, 'RIGHT_ARROW': False, CROUCH: False, JUMP: False, RUN: False }
+    KEY_MAP = {'UP_ARROW': False, 'DOWN_ARROW': False, 'LEFT_ARROW': False, 'RIGHT_ARROW': False, CROUCH: False, JUMP: False, RUN: False, ROTATE_R: False, ROTATE_L: False }
 
     # 지수 곡선 인자
     nowLocation =[0,0,0] 
@@ -107,6 +109,10 @@ class ModalOperator(bpy.types.Operator):
         for index in range(5):
             bpy.data.objects['Point'+ str(index+1)].location = [0,index/-6,0]
             bpy.data.objects['Feature'+ str(index+1)].location = [0,index/-6.1,0]
+
+        # 카메라 위치 초기화
+        camera = bpy.context.scene.camera 
+        camera.location = [0,9,2]
             
 
     def execute(self, context):
@@ -138,6 +144,14 @@ class ModalOperator(bpy.types.Operator):
         globalYLocation = boneLocation[1]+obj.location[1]
 
         input_direction = np.array([0.0, 0.0, 0.0])
+
+        # 뷰 회전                
+        camera = bpy.context.scene.camera 
+        if self.KEY_MAP[ROTATE_R]:
+            camera.location = mathutils.Euler([0.0,0.0,-1/40],'XYZ').to_matrix() @ camera.location
+        if self.KEY_MAP[ROTATE_L]:
+            camera.location = mathutils.Euler([0.0,0.0,1/40],'XYZ').to_matrix() @ camera.location
+
         # 상하
         if self.KEY_MAP['UP_ARROW']:
             input_direction[Z] += GOAL 

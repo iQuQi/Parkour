@@ -4,11 +4,11 @@ import os
 import json
 
 VECTOR3 = [0,0,0]
-KEY_CODE = {'Z': 6,'X': 7, 'C': 8,'V': 9, 'SPACE': 49, 'LEFT': 123, 'RIGHT': 124, 'DOWN' : 125, 'UP': 126}
+KEY_CODE = {'Z': 6,'X': 7, 'C': 8,'V': 9, 'B': 10,'SPACE': 49, 'LEFT': 123, 'RIGHT': 124, 'DOWN' : 125, 'UP': 126}
 X = 0
 Y = 1
 Z = 2
-UPDATE_TIME = 16
+UPDATE_TIME = 30
 GOAL = 0.8
 FINISH_LINE = -25
 IDLE_INDEX = -1

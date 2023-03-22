@@ -100,7 +100,7 @@ class MotionMatcher:
             WINNING = nowAnimInfo['name'] == 'Victory Idle.fbx' and specialIndex!=-1
 
             # 동일한 애니메이션이고 가까운(20이하) 프레임 OR 현재 세레모니 중인 경우 ====> 이어서 재생
-            if (SAME_ANIMATION and IDX_DIFF_UNDER_20) or WINNING:
+            if  WINNING:
                 if self.matched_frame_index + 1 <= nowAnimInfo['end']:
                     print('=========동일한 애니메이션 계속 실행===========',)
                     self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
@@ -196,14 +196,16 @@ class MotionMatcher:
                     else:
                         featurePoint.hide_viewport = True # 인덱스가 벗어난 경우 해당 점은 숨긴다
 
-            # 목 돌아가는 막기 (고정)
-            elif joint == 'mixamorig2:Neck':   
-                bone_struct[joint].location = jointLocation            
-                bone_struct[joint].rotation_quaternion = TPOSE_NECK_ROTATION
+            # # 목 돌아가는 막기 (고정)
+            # elif joint == 'mixamorig2:Neck':   
+            #     bone_struct[joint].location = jointLocation            
+            #     bone_struct[joint].rotation_quaternion = TPOSE_NECK_ROTATION
 
             # 나머지 조인트 위치정보 업데이트
             else: 
                 if self.isUpdated: # == inertialize
+                    print('기존 회전\n', jointRotation)
+                    print('블렌딩 회전\n',self.inertialization.inertializedRotations[joint])
                     jointRotation = self.inertialization.inertializedRotations[joint]
                 bone_struct[joint].location = jointLocation            
                 bone_struct[joint].rotation_quaternion = jointRotation

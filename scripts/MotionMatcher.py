@@ -192,7 +192,7 @@ class MotionMatcher:
                         poseLocation = poses[self.matched_frame_index + index*4]['joints'][joint]['location']
                         diff = obj.rotation_euler.to_matrix() @ mathutils.Vector(substractArray3(poseLocation, self.firstPoseLocation))
                         featurePoint.hide_viewport = False
-                        featurePoint.location = [diff[0]/100 + obj.location[0], diff[1]/100 + obj.location[1], diff[2]/100 + obj.location[2]]
+                        featurePoint.location = [diff[0]/100 + obj.location[0], diff[1]/100 + obj.location[1], 0]
                     else:
                         featurePoint.hide_viewport = True # 인덱스가 벗어난 경우 해당 점은 숨긴다
 

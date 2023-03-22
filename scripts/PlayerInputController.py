@@ -112,7 +112,7 @@ class ModalOperator(bpy.types.Operator):
 
         # 카메라 위치 초기화
         camera = bpy.context.scene.camera 
-        camera.location = [0,9,2]
+        camera.location = [0,14,2]
             
 
     def execute(self, context):
@@ -141,7 +141,7 @@ class ModalOperator(bpy.types.Operator):
         boneLocation = obj.rotation_euler.to_matrix() @ mathutils.Vector([bone_struct['mixamorig2:Hips'].location[0]/100,
                                                                             bone_struct['mixamorig2:Hips'].location[1]/(100),
                                                                             bone_struct['mixamorig2:Hips'].location[2]/100])
-        globalYLocation = boneLocation[1]+obj.location[1]
+        globalXLocation = boneLocation[0]+obj.location[0]
 
         input_direction = np.array([0.0, 0.0, 0.0])
 
@@ -192,7 +192,7 @@ class ModalOperator(bpy.types.Operator):
             self.prevInput = input_direction
 
         # 골에 도착한 경우 세레모니 동작 
-        elif globalYLocation < FINISH_LINE:
+        elif globalXLocation > FINISH_LINE:
             queryVector = self.createQueryVector(input_direction)
             self.motionMatcher.updateMatchedMotion(queryVector, self.finish_pose)
 
@@ -217,7 +217,7 @@ class ModalOperator(bpy.types.Operator):
         boneLocation = obj.rotation_euler.to_matrix() @ mathutils.Vector([bone_struct['mixamorig2:Hips'].location[0]/100,
                                                                             bone_struct['mixamorig2:Hips'].location[1]/(100),
                                                                             bone_struct['mixamorig2:Hips'].location[2]/100])
-        globalLocation = [boneLocation[0]+obj.location[0],boneLocation[1]+obj.location[1],boneLocation[2]+obj.location[2]]
+        globalLocation = [boneLocation[0]+obj.location[0],boneLocation[1]+obj.location[1], 0]
         axes = obj.rotation_euler.to_matrix() @ mathutils.Matrix([
             bone_struct['mixamorig2:Hips'].x_axis,
             bone_struct['mixamorig2:Hips'].y_axis,

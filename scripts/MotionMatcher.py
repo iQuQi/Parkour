@@ -49,7 +49,7 @@ class MotionMatcher:
         # 트리 생성해주기
         point_list = []
         for i in range(len(features)-1):
-            point = [features[i]['hipHeight']/2.15]
+            point = [features[i]['hipHeight']/2.25]
             point += (np.array(features[i]['footLocation']['left'])).tolist() + (np.array(features[i]['footLocation']['right'])).tolist() # foot 추가
             point += (np.array(features[i]['footSpeed']['left'])/2).tolist() + (np.array(features[i]['footSpeed']['right'])/2).tolist() # foot 추가
             for location in features[i]['trajectoryLocation']:                
@@ -74,7 +74,7 @@ class MotionMatcher:
     def getCurrentPose(self):
         return poses[self.matched_frame_index]['joints']
 
-    def updateMatchedMotion(self, query, specialIndex=-1):
+    def updateMatchedMotion(self, query,  specialIndex=-1,crouch=False):
         obj = bpy.data.objects['Armature']
         bone_struct = obj.pose.bones
         joint_names = bone_struct.keys()
@@ -83,8 +83,25 @@ class MotionMatcher:
         sourcePose = poses[self.matched_frame_index] # for Inertialization
 
           
+
+        # 현재 세레모니 중이거나 애니메이션이 끝난 경우 ====> 이어서 재생
+        WINNING = nowAnimInfo['name'] == 'Victory Idle.fbx' and specialIndex!=-1
+        if  WINNING or self.matched_frame_index + 1 > nowAnimInfo['end']:
+            if self.matched_frame_index + 1 <= nowAnimInfo['end']:
+                print('========= SAME ANIMATION CONTINUE ===========',)
+                self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
+            else:
+                print('======= SAME ANIMATION FROM BEGINNING =======',)
+                self.matched_frame_index = nowAnimInfo['start']
+                self.isUpdated = True
+        # 특정 포즈를 지정해줘야 하는 경우
+        elif specialIndex!=-1:    
+            self.isUpdated = True
+            self.matched_frame_index = specialIndex
         # 매칭 프레임 찾기
-        if self.time == UPDATE_TIME or self.matched_frame_index + 1 > nowAnimInfo['end']:
+        elif self.time == UPDATE_TIME :
+            print('========= UPDATE_TIME =========')
+
             # 쿼리벡터 넣어주기
             distance, findIndex = self.tree.query(query) # 트리에서 검색
             
@@ -93,31 +110,13 @@ class MotionMatcher:
             newAnimInfo = poses[newPoseIndex]['animInfo'][0]
 
             # 분기 조건 정의
-            DIFF_ANIMATION = nowAnimInfo['name'] != newAnimInfo['name']
-            SAME_ANIMATION = nowAnimInfo['name'] == newAnimInfo['name']
-            IDX_DIFF_UNDER_20 = np.abs(newPoseIndex - nowAnimInfo['index']) < 20
-            IDX_DIFF_OVER_20 = np.abs(newPoseIndex - nowAnimInfo['index']) >= 20
-            WINNING = nowAnimInfo['name'] == 'Victory Idle.fbx' and specialIndex!=-1
+            # DIFF_ANIMATION = nowAnimInfo['name'] != newAnimInfo['name']
+            # SAME_ANIMATION = nowAnimInfo['name'] == newAnimInfo['name']
+            # IDX_DIFF_UNDER_20 = np.abs(newPoseIndex - nowAnimInfo['index']) < 20
+            # IDX_DIFF_OVER_20 = np.abs(newPoseIndex - nowAnimInfo['index']) >= 20
 
-            # 동일한 애니메이션이고 가까운(20이하) 프레임 OR 현재 세레모니 중인 경우 ====> 이어서 재생
-            if  WINNING:
-                if self.matched_frame_index + 1 <= nowAnimInfo['end']:
-                    print('=========동일한 애니메이션 계속 실행===========',)
-                    self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
-                else:
-                    print('=========동일한 애니메이션 처음부터 실행===========',)
-                    self.matched_frame_index = nowAnimInfo['start']
-                    self.isUpdated = True
-            
-            # 특정 포즈를 지정해줘야 하는 경우
-            elif specialIndex!=-1:
-                self.isUpdated = True
-                self.matched_frame_index = specialIndex
-
-            # 다른 애니메이션이거나, 같은 애니메이션이지만 먼 프레임인 경우 ====> 교체
-            else: 
-                self.isUpdated = True
-                self.matched_frame_index = newPoseIndex    
+            self.isUpdated = True
+            self.matched_frame_index = newPoseIndex    
 
         # 계속 실행 ===> 프레임 1 씩 증가
         else: 
@@ -153,7 +152,10 @@ class MotionMatcher:
 
                     # T 포즈의 위치 이동 & 높이 고정
                     obj.location = addArray3(obj.location,obj.rotation_euler.to_matrix()@mathutils.Vector([bone_struct[joint].location[0]/100,bone_struct[joint].location[1]/100,bone_struct[joint].location[2]/100]))
-                    obj.location[2] = 0
+                    if crouch: 
+                        if specialIndex != -1: obj.location[2] = CROUCH_HIP_IDLE_HEIGHT/100
+                        else: obj.location[2] = CROUCH_HIP_HEIGHT/100
+                    else: obj.location[2] = 0
                     
                     # T 포즈 회전각 구하는 과정  ====> 현재 포즈와 바꿀 포즈 사이의 각도 구하기 
                     # 현재 포즈의 회전 벡터
@@ -196,17 +198,12 @@ class MotionMatcher:
                     else:
                         featurePoint.hide_viewport = True # 인덱스가 벗어난 경우 해당 점은 숨긴다
 
-            # # 목 돌아가는 막기 (고정)
-            # elif joint == 'mixamorig2:Neck':   
-            #     bone_struct[joint].location = jointLocation            
-            #     bone_struct[joint].rotation_quaternion = TPOSE_NECK_ROTATION
-
             # 나머지 조인트 위치정보 업데이트
             else: 
-                if self.isUpdated: # == inertialize
-                    # print('기존 회전\n', jointRotation)
-                    # print('블렌딩 회전\n',self.inertialization.inertializedRotations[joint])
-                    jointRotation = self.inertialization.inertializedRotations[joint]
+                # if self.isUpdated: # == inertialize
+                #     # print('기존 회전\n', jointRotation)
+                #     # print('블렌딩 회전\n',self.inertialization.inertializedRotations[joint])
+                #     jointRotation = self.inertialization.inertializedRotations[joint]
                 bone_struct[joint].location = jointLocation            
                 bone_struct[joint].rotation_quaternion = jointRotation
 

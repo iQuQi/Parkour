@@ -217,7 +217,7 @@ class ModalOperator(bpy.types.Operator):
         boneLocation = obj.rotation_euler.to_matrix() @ mathutils.Vector([bone_struct['mixamorig2:Hips'].location[0]/100,
                                                                             bone_struct['mixamorig2:Hips'].location[1]/(100),
                                                                             bone_struct['mixamorig2:Hips'].location[2]/100])
-        globalLocation = [boneLocation[0]+obj.location[0],boneLocation[1]+obj.location[1], 0]
+        globalLocation = [boneLocation[0]+obj.location[0],boneLocation[1]+obj.location[1], boneLocation[2]+obj.location[2]]
         axes = obj.rotation_euler.to_matrix() @ mathutils.Matrix([
             bone_struct['mixamorig2:Hips'].x_axis,
             bone_struct['mixamorig2:Hips'].y_axis,
@@ -259,7 +259,7 @@ class ModalOperator(bpy.types.Operator):
             if index % 2 != 0: 
                 nowRotationMatrix = mathutils.Quaternion(poses[self.motionMatcher.matched_frame_index]['joints']['mixamorig2:Hips']['rotation']).to_matrix() 
                 diff = obj.rotation_euler.to_matrix() @  mathutils.Matrix(nowRotationMatrix) @ mathutils.Vector(updatePosition)
-                printPoint.append([diff[0] + globalLocation[0], diff[1] + globalLocation[1],  diff[2] + globalLocation[2]])
+                printPoint.append([diff[0] + globalLocation[0], diff[1] + globalLocation[1],  0])
                 trajectoryLocation.extend(updatePosition)
                 trajectoryDirection.extend(substractArray3(updatePosition,self.nowLocation))
                 self.desiredLocation = self.nowLocation + input_direction
@@ -270,7 +270,7 @@ class ModalOperator(bpy.types.Operator):
             bpy.data.objects['Point'+ str(index+1)].location = point
 
 
-        return [hipHeight/2] + (np.array(LfootLocation)).tolist() + (np.array(RfootLocation)).tolist() + (np.array(LfootVelocity)/2).tolist() + (np.array(RfootVelocity)/2).tolist() + (np.array(trajectoryLocation)*7).tolist() 
+        return [hipHeight/2.15] + (np.array(LfootLocation)).tolist() + (np.array(RfootLocation)).tolist() + (np.array(LfootVelocity)/2).tolist() + (np.array(RfootVelocity)/2).tolist() + (np.array(trajectoryLocation)*7).tolist() 
       
 
     # spring damper 책 참고

@@ -177,7 +177,7 @@ class ModalOperator(bpy.types.Operator):
             input_direction = np.array([0, GOAL*3, input_direction[Z]/3])
             if input_direction[Z] < 0: input_direction[Z] -= GOAL*3
         elif self.KEY_MAP[RUN]:
-                input_direction *= 2.5
+            input_direction *= 3
 
 
         # 이전 인풋과 현재 인풋이 다른 경우 즉시 교체

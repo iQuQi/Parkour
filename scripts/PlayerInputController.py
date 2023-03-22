@@ -162,11 +162,11 @@ class ModalOperator(bpy.types.Operator):
         # 좌우
         if self.KEY_MAP['LEFT_ARROW']:
             input_direction[X] += GOAL
-            if input_direction[Z]>0: input_direction[Z] -= GOAL/2
+            if input_direction[Z]>0: input_direction[Z] -= GOAL/3
             else: input_direction[Z] += GOAL/2
         if self.KEY_MAP['RIGHT_ARROW']:
             input_direction[X] += (-1*GOAL) 
-            if input_direction[Z]>0: input_direction[Z] -= GOAL/2
+            if input_direction[Z]>0: input_direction[Z] -= GOAL/3
             else: input_direction[Z] += GOAL/2
 
         # 웅크리기 / 점프 / 달리기
@@ -182,14 +182,14 @@ class ModalOperator(bpy.types.Operator):
 
         # 이전 인풋과 현재 인풋이 다른 경우 즉시 교체
         if not np.array_equal(self.prevInput, input_direction):
-                self.motionMatcher.time = UPDATE_TIME
+            print('========== INPUT CHANAGE ==========')
+            self.motionMatcher.time = UPDATE_TIME
 
         # 입력의 크기가 0보다 큰 경우 -> 유효한 쿼리 생성후 업데이트 함수 호출
         if np.linalg.norm(input_direction) > 0.0: 
             self.idle = False
             queryVector = self.createQueryVector(input_direction, self.KEY_MAP[CROUCH])
-            self.motionMatcher.updateMatchedMotion(queryVector,  -1)
-            self.prevInput = input_direction
+            self.motionMatcher.updateMatchedMotion(queryVector, crouch = self.KEY_MAP[CROUCH])
 
         # 골에 도착한 경우 세레모니 동작 
         elif globalXLocation > FINISH_LINE:
@@ -199,12 +199,13 @@ class ModalOperator(bpy.types.Operator):
         # 웅크리기 상태로 인풋이 없는 경우 -> 웅크리기 초기화 자세 / 이외의 상태일 때 인풋이 없는 경우 -> 기본 초기화 자세
         else:
             queryVector = self.createQueryVector(input_direction)
-            if self.KEY_MAP[CROUCH]: self.motionMatcher.updateMatchedMotion(queryVector, self.crouch_init_pose)
+            if self.KEY_MAP[CROUCH]: self.motionMatcher.updateMatchedMotion(queryVector, self.crouch_init_pose, crouch = self.KEY_MAP[CROUCH])
             elif self.idle and not self.KEY_MAP[RUN]:
                 self.motionMatcher.time = UPDATE_TIME
                 self.prevInput = [-1,-1,-1]
                 self.motionMatcher.updateMatchedMotion(queryVector, self.init_pose)
         
+        self.prevInput = input_direction
         if self.first: self.first = False
 
 
@@ -234,8 +235,8 @@ class ModalOperator(bpy.types.Operator):
         speed = 1
         if self.KEY_MAP[RUN]: speed *= 2
         # 웅크리기 상태에 따라 힙 위치 조정
-        if crouch: hipHeight = -30
-        else: hipHeight = -5
+        if crouch: hipHeight = CROUCH_HIP_HEIGHT
+        else: hipHeight = DEFAULT_HIP_HEIGHT
 
         # 각종 포즈 정보들 채우기
         rootVelocity = speed*bone_struct['mixamorig2:Hips'].z_axis
@@ -270,7 +271,7 @@ class ModalOperator(bpy.types.Operator):
             bpy.data.objects['Point'+ str(index+1)].location = point
 
 
-        return [hipHeight/2.15] + (np.array(LfootLocation)).tolist() + (np.array(RfootLocation)).tolist() + (np.array(LfootVelocity)/2).tolist() + (np.array(RfootVelocity)/2).tolist() + (np.array(trajectoryLocation)*7).tolist() 
+        return [hipHeight/2.25] + (np.array(LfootLocation)).tolist() + (np.array(RfootLocation)).tolist() + (np.array(LfootVelocity)/2).tolist() + (np.array(RfootVelocity)/2).tolist() + (np.array(trajectoryLocation)*7).tolist() 
       
 
     # spring damper 책 참고

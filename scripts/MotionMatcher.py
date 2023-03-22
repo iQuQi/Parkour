@@ -49,7 +49,7 @@ class MotionMatcher:
         # 트리 생성해주기
         point_list = []
         for i in range(len(features)-1):
-            point = [features[i]['hipHeight']/2]
+            point = [features[i]['hipHeight']/2.15]
             point += (np.array(features[i]['footLocation']['left'])).tolist() + (np.array(features[i]['footLocation']['right'])).tolist() # foot 추가
             point += (np.array(features[i]['footSpeed']['left'])/2).tolist() + (np.array(features[i]['footSpeed']['right'])/2).tolist() # foot 추가
             for location in features[i]['trajectoryLocation']:                
@@ -204,8 +204,8 @@ class MotionMatcher:
             # 나머지 조인트 위치정보 업데이트
             else: 
                 if self.isUpdated: # == inertialize
-                    print('기존 회전\n', jointRotation)
-                    print('블렌딩 회전\n',self.inertialization.inertializedRotations[joint])
+                    # print('기존 회전\n', jointRotation)
+                    # print('블렌딩 회전\n',self.inertialization.inertializedRotations[joint])
                     jointRotation = self.inertialization.inertializedRotations[joint]
                 bone_struct[joint].location = jointLocation            
                 bone_struct[joint].rotation_quaternion = jointRotation

@@ -15,6 +15,7 @@ CROUCH_HIP_IDLE_HEIGHT = -56
 DEFAULT_HIP_HEIGHT = -1
 FINISH_LINE = 19
 IDLE_INDEX = -1
+INITIALIZE_TIME = 30
 DEFAULT_EULER = [1.5708,0,0.0320]
           
 upper_dir_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
@@ -68,11 +69,8 @@ def updateM(globalLocation, axes):
 
 def calculateDistance(feature, query):
     total = 0
-    # print('피쳐의 trajectory 출력 : ', feature)
-    # print('쿼리 벡터 출력 : ', query)
     for i in range(len(feature)):
         total += distance.euclidean(feature[i], query[i])
-        # print('각 차이 : idx = ', i, distance.euclidean(feature[i], query[i]),feature[i],query[i])
     return total
 
 def L2_norm(x):
@@ -84,7 +82,6 @@ def L2_norm(x):
 def getRadian(x,y):
     v = np.inner(x, y) / (L2_norm(x) * L2_norm(y))
     radian = np.arccos(v)
-    # print('getANGLE:', np.inner(x, y),L2_norm(x),L2_norm(y), v)
     return radian
 
 

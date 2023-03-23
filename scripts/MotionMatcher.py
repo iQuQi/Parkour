@@ -37,10 +37,11 @@ class MotionMatcher:
 
     stopEnd = False
 
-    inertialization = Inertialization
+    inertialization = Inertialization()
     inertialize = False
     inertializeHalfLife = 0.1
     inertializeDeltaTime = 1/30
+    
      
     def __init__(self, IDLE_INDEX):
         self.matched_frame_index = IDLE_INDEX
@@ -85,8 +86,8 @@ class MotionMatcher:
           
 
         # 현재 세레모니 중이거나 애니메이션이 끝난 경우 ====> 이어서 재생
-        WINNING = nowAnimInfo['name'] == 'Victory Idle.fbx' and specialIndex!=-1
-        if  WINNING or self.matched_frame_index + 1 > nowAnimInfo['end']:
+        KEEP_PLAYING = specialIndex!=-1 and poses[specialIndex]['animInfo'][0]['name'] == poses[self.matched_frame_index]['animInfo'][0]['name']
+        if  KEEP_PLAYING or self.matched_frame_index + 1 > nowAnimInfo['end']:
             if self.matched_frame_index + 1 <= nowAnimInfo['end']:
                 print('========= SAME ANIMATION CONTINUE ===========',)
                 self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
@@ -109,12 +110,6 @@ class MotionMatcher:
             newPoseIndex = features[findIndex]['poseIndex']     
             newAnimInfo = poses[newPoseIndex]['animInfo'][0]
 
-            # 분기 조건 정의
-            # DIFF_ANIMATION = nowAnimInfo['name'] != newAnimInfo['name']
-            # SAME_ANIMATION = nowAnimInfo['name'] == newAnimInfo['name']
-            # IDX_DIFF_UNDER_20 = np.abs(newPoseIndex - nowAnimInfo['index']) < 20
-            # IDX_DIFF_OVER_20 = np.abs(newPoseIndex - nowAnimInfo['index']) >= 20
-
             self.isUpdated = True
             self.matched_frame_index = newPoseIndex    
 
@@ -130,23 +125,25 @@ class MotionMatcher:
 
 
         # Inertialization - 블렌딩
-        self.inertialization = Inertialization()
         if self.isUpdated:
+            self.inertialization.reset()
+        if self.inertialization.inertializeIndex < INITIALIZE_TIME: 
             self.inertialization.poseTransition(sourcePose, targetPose)
             self.inertialization.update(targetPose, self.inertializeHalfLife, self.inertializeDeltaTime)
-
-
+            self.inertialization.inertializeIndex += 1
 
         # 해당하는 프레임으로 애니메이션 교체 & 재생 
         for joint in joint_names:
             # 조인트 회전 정보 업데이트
             jointRotation = mathutils.Quaternion(poses[self.matched_frame_index]['joints'][joint]['rotation'])
             jointLocation = poses[self.matched_frame_index]['joints'][joint]['location']
+   
             # 힙 조인트 위치정보 업데이트                
             if joint == 'mixamorig2:Hips': 
                 # T pose 업데이트
                 if self.isUpdated:
                     # 현재 힙 정보 저장해두기
+                    
                     self.firstPoseRotation = jointRotation # 초기 pose의 rotation
                     self.firstPoseLocation = jointLocation # 초기 pose의 location
 
@@ -184,7 +181,7 @@ class MotionMatcher:
                     # 구한 각도만큼 글로벌 Z축에 대해서 회전 하기
                     obj.rotation_euler.rotate(mathutils.Euler([0.0,0.0,-self.radian_xz],'XYZ'))
 
-                # 힙은 inertialization 무시
+                
                 bone_struct[joint].location = substractArray3(jointLocation, self.firstPoseLocation) # 수평방향 고정
                 bone_struct[joint].rotation_quaternion = jointRotation
 
@@ -200,10 +197,8 @@ class MotionMatcher:
 
             # 나머지 조인트 위치정보 업데이트
             else: 
-                # if self.isUpdated: # == inertialize
-                #     # print('기존 회전\n', jointRotation)
-                #     # print('블렌딩 회전\n',self.inertialization.inertializedRotations[joint])
-                #     jointRotation = self.inertialization.inertializedRotations[joint]
+                if self.inertialization.inertializeIndex < INITIALIZE_TIME: 
+                    jointRotation = self.inertialization.inertializedRotations[joint]
                 bone_struct[joint].location = jointLocation            
                 bone_struct[joint].rotation_quaternion = jointRotation
 

@@ -141,7 +141,6 @@ def fbx2PoseDB():
                     q1 = prev_rotation[name]
                     q2 = local_rotation
                     dt = 1/30
-                    # angular_velocity = [(local_rotation.w-prev_rotation[name].w)*30,(local_rotation.x-prev_rotation[name].x)*30,(local_rotation.y-prev_rotation[name].y)*30, (local_rotation.z-prev_rotation[name].z)*30]
                     angular_velocity = (np.array([
                                         q1[0]*q2[1] - q1[1]*q2[0] - q1[2]*q2[3] + q1[3]*q2[2],
                                         q1[0]*q2[2] + q1[1]*q2[3] - q1[2]*q2[0] - q1[3]*q2[1],

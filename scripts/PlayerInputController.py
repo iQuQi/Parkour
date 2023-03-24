@@ -158,7 +158,6 @@ class ModalOperator(bpy.types.Operator):
         if self.KEY_MAP['DOWN_ARROW']:
             input_direction[Z] += (-1*GOAL) 
 
-
         # 좌우
         if self.KEY_MAP['LEFT_ARROW']:
             input_direction[X] += GOAL
@@ -200,7 +199,7 @@ class ModalOperator(bpy.types.Operator):
         else:
             queryVector = self.createQueryVector(input_direction)
             if self.KEY_MAP[CROUCH]: self.motionMatcher.updateMatchedMotion(queryVector, self.crouch_init_pose, crouch = self.KEY_MAP[CROUCH])
-            elif self.idle and not self.KEY_MAP[RUN]:
+            elif self.idle:
                 self.motionMatcher.time = UPDATE_TIME
                 self.prevInput = [-1,-1,-1]
                 self.motionMatcher.updateMatchedMotion(queryVector, self.init_pose)

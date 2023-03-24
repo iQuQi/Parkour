@@ -34,14 +34,12 @@ class MotionMatcher:
     firstPoseIndex = 0
 
     isUpdated = False
-
+    isCrouching = False
     stopEnd = False
 
     inertialization = Inertialization()
     inertialize = False
-    inertializeHalfLife = 0.1
-    inertializeDeltaTime = 1/30
-    
+    inertializeHipDiff = 0
      
     def __init__(self, IDLE_INDEX):
         self.matched_frame_index = IDLE_INDEX
@@ -85,7 +83,7 @@ class MotionMatcher:
 
           
 
-        # 현재 세레모니 중이거나 애니메이션이 끝난 경우 ====> 이어서 재생
+        # 현재 세레모니, 웅크리기 멈춤 또는 서서 멈춤 동작 중이거나 애니메이션이 끝난 경우 ====> 이어서 재생
         KEEP_PLAYING = specialIndex!=-1 and poses[specialIndex]['animInfo'][0]['name'] == poses[self.matched_frame_index]['animInfo'][0]['name']
         if  KEEP_PLAYING or self.matched_frame_index + 1 > nowAnimInfo['end']:
             if self.matched_frame_index + 1 <= nowAnimInfo['end']:
@@ -128,32 +126,35 @@ class MotionMatcher:
         if self.isUpdated:
             self.inertialization.reset()
         if self.inertialization.inertializeIndex < INITIALIZE_TIME: 
-            self.inertialization.poseTransition(sourcePose, targetPose)
-            self.inertialization.update(targetPose, self.inertializeHalfLife, self.inertializeDeltaTime)
+            self.inertialization.allJointTransition(sourcePose, targetPose)
+            self.inertialization.updateAllJoint(targetPose)
             self.inertialization.inertializeIndex += 1
 
         # 해당하는 프레임으로 애니메이션 교체 & 재생 
         for joint in joint_names:
             # 조인트 회전 정보 업데이트
             jointRotation = mathutils.Quaternion(poses[self.matched_frame_index]['joints'][joint]['rotation'])
-            jointLocation = poses[self.matched_frame_index]['joints'][joint]['location']
+            jointLocation = poses[self.matched_frame_index]['joints'][joint]['location'].copy()
    
             # 힙 조인트 위치정보 업데이트                
             if joint == 'mixamorig2:Hips': 
+              
                 # T pose 업데이트
                 if self.isUpdated:
                     # 현재 힙 정보 저장해두기
-                    
                     self.firstPoseRotation = jointRotation # 초기 pose의 rotation
                     self.firstPoseLocation = jointLocation # 초기 pose의 location
 
                     # T 포즈의 위치 이동 & 높이 고정
                     obj.location = addArray3(obj.location,obj.rotation_euler.to_matrix()@mathutils.Vector([bone_struct[joint].location[0]/100,bone_struct[joint].location[1]/100,bone_struct[joint].location[2]/100]))
-                    if crouch: 
-                        if specialIndex != -1: obj.location[2] = CROUCH_HIP_IDLE_HEIGHT/100
-                        else: obj.location[2] = CROUCH_HIP_HEIGHT/100
-                    else: obj.location[2] = 0
+                    self.inertializeHipDiff = targetPose['joints'][joint]['location'][1] - sourcePose['joints'][joint]['location'][1]
                     
+                    # 높이 고정 -> 웅크리기는 예외 조절
+                    if crouch: 
+                        obj.location[2] = self.inertializeHipDiff/100
+                        self.isCrouching = True
+                    else: obj.location[2] = 0
+
                     # T 포즈 회전각 구하는 과정  ====> 현재 포즈와 바꿀 포즈 사이의 각도 구하기 
                     # 현재 포즈의 회전 벡터
                     bone_origin = mathutils.Quaternion(bone_struct[joint].rotation_quaternion).to_matrix()
@@ -181,9 +182,26 @@ class MotionMatcher:
                     # 구한 각도만큼 글로벌 Z축에 대해서 회전 하기
                     obj.rotation_euler.rotate(mathutils.Euler([0.0,0.0,-self.radian_xz],'XYZ'))
 
-                
-                bone_struct[joint].location = substractArray3(jointLocation, self.firstPoseLocation) # 수평방향 고정
+
+                finalHipDiff = 0
+                bone_struct[joint].location = substractArray3(jointLocation, self.firstPoseLocation)# 수평방향 고정
                 bone_struct[joint].rotation_quaternion = jointRotation
+
+                #힙 높이 블렌딩
+                if self.inertialization.inertializeIndex < INITIALIZE_TIME: 
+                    self.inertialization.hipsPositionTransition(sourcePose, targetPose)
+                    self.inertialization.updateHipsPosition(targetPose)
+                    # crouch만 예외                  
+                    if abs(self.inertializeHipDiff) > 20 and self.isCrouching: 
+                        # crouch -> stand
+                        if self.inertializeHipDiff > 0: finalHipDiff = self.inertialization.inertializedHips[1]
+                        # stand -> crouch
+                        else: finalHipDiff = abs(self.inertializeHipDiff) + self.inertialization.inertializedHips[1]
+                        bone_struct[joint].location[1] += finalHipDiff
+                    # 나머지 동작들
+                    else: bone_struct[joint].location[1] = self.inertialization.inertializedHips[1]
+   
+                if not crouch : self.isCrouching = False
 
                 for index in range(5): # 0~4까지 피쳐 위치 출력 -> 파란색 점들
                     featurePoint = bpy.data.objects['Feature'+ str(index+1)]

@@ -3,6 +3,9 @@ import mathutils
 import bpy
 # import torch
 from utils.common import *
+HALF_LIFE = 0.1
+DELTA_TIME_DEFAULT = 1/30
+DELTA_TIME_HIP = 4/30
 
 class Inertialization:
     inertializedRotations = {}
@@ -16,9 +19,16 @@ class Inertialization:
     offsetHipsVelocity = mathutils.Vector()
 
     inertializeIndex = 0
+    y = 0
+    eyedt_default = 0
+    eyedt_hip = 0
 
 
     def __init__(self):
+        self.y = self.halfLifeToDamping() / 2.0; # this could be precomputed
+        self.eyedt_default = self.fastNEgeExp(self.y * DELTA_TIME_DEFAULT) # this could be precomputed if several agents use it the same frame
+        self.eyedt_hip = self.fastNEgeExp(self.y * DELTA_TIME_HIP) # this could be precomputed if several agents use it the same frame
+
         self.reset()
 
     def reset(self):
@@ -40,7 +50,7 @@ class Inertialization:
         self.offsetHips = mathutils.Vector()
         self.offsetHipsVelocity = mathutils.Vector()
 
-    def poseTransition(self, sourcePose, targetPose):
+    def allJointTransition(self, sourcePose, targetPose):
         # Set up the inertialization for joint local rotations (no simulation bone)
         for joint in sourcePose['joints'].keys():
             sourcePoseJoint = sourcePose['joints'][joint]
@@ -55,7 +65,9 @@ class Inertialization:
             self.inertializeJointTransition(sourceJointRotation, sourceJointAngularVelocity, 
                                             targetJointRotation, targetJointAngularVelocity,
                                             key = joint) # offsetRotations[i], offsetAngularVelocities[i]
-        
+    
+
+    def hipsPositionTransition(self,sourcePose, targetPose):
         # Set up the inertialization for hips
         sourceHips = sourcePose['joints']['mixamorig2:Hips']
         targetHips = targetPose['joints']['mixamorig2:Hips']
@@ -67,37 +79,32 @@ class Inertialization:
         targetHipsVelocity = mathutils.Vector(targetHips['velocity'])
 
         self.inertializeJointTransition4Hips(sourceHipsLocation, sourceHipsVelocity, 
-                                        targetHipsLocation, targetHipsVelocity,
-                                        self.offsetHips, self.offsetHipsVelocity)
+                                        targetHipsLocation, targetHipsVelocity,)
 
 
-    def update(self, targetPose, halfLife, deltaTime):
+    def updateAllJoint(self, targetPose):
         # Update the inertialization for joint local rotations
         for joint in targetPose['joints'].keys():
             targetPoseJoint = targetPose['joints'][joint]
             targetJointRotation = mathutils.Quaternion(targetPoseJoint['rotation'])
             targetJointAngularVelocity = mathutils.Vector(targetPoseJoint['angularVelocity'])
-            self.inertializeJointUpdate(targetJointRotation, targetJointAngularVelocity,
-                                        halfLife, deltaTime,
-                                        key = joint)
+            self.inertializeJointUpdate(targetJointRotation, targetJointAngularVelocity,key = joint)
 
-        
+
+    def updateHipsPosition(self, targetPose): 
         #Update the inertialization for hips
         targetHips = targetPose['joints']['mixamorig2:Hips']
         targetHipsLocation = mathutils.Vector(targetHips['location'])
         targetRootVelocity = mathutils.Vector(targetHips['velocity'])
-        self.inertializeJointUpdate4Hips(targetHipsLocation, targetRootVelocity,
-                                    halfLife, deltaTime,
-                                    self.offsetHips, self.offsetHipsVelocity,
-                                    self.inertializedHips, self.inertializedHipsVelocity)
+        self.inertializeJointUpdate4Hips(targetHipsLocation, targetRootVelocity,)
+
 
     def abs(self, q):
         if q.w < 0.0: return mathutils.Quaternion([-q.w, -q.x, -q.y, -q.z]) 
         else: return q
 
     def inertializeJointTransition(self, sourceRot, sourceAngularVel,
-                                    targetRot, targetAngularVel,
-                                    key): # offsetRot, offsetAngularvel
+                                    targetRot, targetAngularVel,key): # offsetRot, offsetAngularvel
         targetM = targetRot.to_matrix().inverted()
         sourceM = sourceRot.to_matrix()
         offsetM = self.offsetRotations[key].to_matrix()
@@ -107,17 +114,16 @@ class Inertialization:
         self.offsetRotations[key] = matrixMul.normalized()
         self.offsetAngularVelocities[key] = (sourceAngularVel + self.offsetAngularVelocities[key]) - targetAngularVel
 
-    def inertializeJointTransition4Hips(self, source, sourceVel,
-                                        target, targetVel,
-                                        offset, offsetVel): # offset, offsetVel
-        self.offsetHips = (source + offset) -target
-        self.offsetHipsVelocity = (sourceVel + offsetVel) - targetVel
 
-    def inertializeJointUpdate(self, targetRot, targetAngularVel,
-                                halfLife, deltaTime,
-                                key): 
+    def inertializeJointTransition4Hips(self, source, sourceVel,
+                                        target, targetVel,): # offset, offsetVel
+        self.offsetHips = (source + self.offsetHips) - target
+        self.offsetHipsVelocity = (sourceVel + self.offsetHipsVelocity) - targetVel
+
+
+    def inertializeJointUpdate(self, targetRot, targetAngularVel, key): 
         # offsetRot = offsetRotations, offsetAngularVel = offsetAngularVelocities, newRot = inertializedRotations, newAngularVel = inertializedAngularVelocities
-        self.decaySpringDamperImplicit(key, halfLife, deltaTime)
+        self.decaySpringDamperImplicit(key)
 
         targetM = targetRot.to_matrix()
         offsetM = self.offsetRotations[key].to_matrix()
@@ -126,39 +132,33 @@ class Inertialization:
         self.inertializedRotations[key] = matrixMul.to_quaternion()
         self.inertializedAngularVelocities[key] = targetAngularVel + self.offsetAngularVelocities[key]
         
-    def inertializeJointUpdate4Hips(self, target, targetVel,
-                                    halfLife, deltaTime,
-                                    offset, offsetVel,
-                                    newValue, newVel):
-        self.decaySpringDamperImplicit4Hips(offset, offsetVel, halfLife, deltaTime)
-        self.inertializedHips = target + offset
-        self.inertializedHipsVelocity = targetVel + offsetVel
+
+    def inertializeJointUpdate4Hips(self, target, targetVel):
+        self.decaySpringDamperImplicit4Hips()
+        self.inertializedHips = target + self.offsetHips
+        self.inertializedHipsVelocity = targetVel + self.offsetHipsVelocity
 
 
-    def decaySpringDamperImplicit(self, key, halfLife, deltaTime):
+    def decaySpringDamperImplicit(self, key):
         rot = self.offsetRotations[key]
         angularVel = self.offsetAngularVelocities[key]
-        y = self.halfLifeToDamping(halfLife) / 2.0; # this could be precomputed
         j0 = self.quaternionToScaledAngleAxis(rot)
-        j1 = angularVel + j0 * y
-        eyedt = self.fastNEgeExp(y * deltaTime) # this could be precomputed if several agents use it the same frame
+        j1 = angularVel + j0 * self.y
 
-        self.offsetRotations[key] = self.quaternionFromScaledAngleAxis(eyedt * j0 + j1 * deltaTime)
-        self.offsetAngularVelocities[key] = (eyedt * (angularVel - j1 * y * deltaTime))
+        self.offsetRotations[key] = self.quaternionFromScaledAngleAxis(self.eyedt_default * (j0 + j1 * DELTA_TIME_DEFAULT))
+        self.offsetAngularVelocities[key] = (self.eyedt_default * (angularVel - j1 * self.y * DELTA_TIME_DEFAULT))
     
-    def decaySpringDamperImplicit4Hips(self, pos, velocity, halfLife, deltaTime):
+    def decaySpringDamperImplicit4Hips(self):
 
-        y = self.halfLifeToDamping(halfLife) / 2.0 # this could be precomputed
-        j1 = velocity + pos * y
-        eyedt = self.fastNEgeExp(y * deltaTime) # this could be precomputed if several agents use it the same frame
+        j1 = self.offsetHipsVelocity + self.offsetHips * self.y
 
-        self.offsetHips = eyedt * (pos + j1 * deltaTime)
-        self.offsetHipsVelocity = eyedt * (velocity - j1 * y * deltaTime)
+        self.offsetHips = self.eyedt_hip * (self.offsetHips + j1 * DELTA_TIME_HIP)
+        self.offsetHipsVelocity = self.eyedt_hip * (self.offsetHipsVelocity - j1 * self.y * DELTA_TIME_HIP)
         
     
-    def halfLifeToDamping(self, halfLife, eps = 1e-5):
+    def halfLifeToDamping(self, eps = 1e-5):
         LN2f = 0.69314718056
-        return (4.0 * LN2f) / (halfLife + eps)
+        return (4.0 * LN2f) / (HALF_LIFE + eps)
         
 
     def fastNEgeExp(self, x):

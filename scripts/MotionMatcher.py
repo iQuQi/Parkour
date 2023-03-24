@@ -199,8 +199,7 @@ class MotionMatcher:
                         else: finalHipDiff = abs(self.inertializeHipDiff) + self.inertialization.inertializedHips[1]
                         bone_struct[joint].location[1] += finalHipDiff
                     # 나머지 동작들
-                    else: bone_struct[joint].location[1] = self.inertialization.inertializedHips[1]
-   
+                    else: bone_struct[joint].location[1] = self.inertialization.inertializedHips[1] - self.firstPoseLocation[1]
                 if not crouch : self.isCrouching = False
 
                 for index in range(5): # 0~4까지 피쳐 위치 출력 -> 파란색 점들

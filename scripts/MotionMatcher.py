@@ -40,24 +40,24 @@ class MotionMatcher:
 
     inertialization = Inertialization()
     inertialize = False
-    inertializeHipDiff = 0
-     
+    inertializeHipDiff = 0 
     def __init__(self, IDLE_INDEX):
         self.matched_frame_index = IDLE_INDEX
         self.init_pose = IDLE_INDEX
         self.motion = 'idle'
-
         # 트리 생성해주기
         point_list = []
         for i in range(len(features)-1):
             point = [features[i]['hipHeight']/2.25]
+            # point += (np.array(features[i]['rootSpeed'])/10).tolist()
             point += (np.array(features[i]['footLocation']['left'])).tolist() + (np.array(features[i]['footLocation']['right'])).tolist() # foot 추가
             point += (np.array(features[i]['footSpeed']['left'])/2).tolist() + (np.array(features[i]['footSpeed']['right'])/2).tolist() # foot 추가
-            for location in features[i]['trajectoryLocation']:                
+
+            for location in features[i]['trajectoryLocation']:
                 point += (np.array(location)/15.5).tolist()
+
             point_list.append(point)
         
-
         self.tree = spatial.KDTree(point_list)
 
 
@@ -85,11 +85,11 @@ class MotionMatcher:
     def getCurrentPose(self):
         return poses[self.matched_frame_index]['joints']
 
-    def updateMatchedMotion(self, query,  specialIndex=-1,crouch=False, jump=False):
+    def updateMatchedMotion(self, query, specialIndex=-1, crouch=False, jump=False):
         obj = bpy.data.objects['Armature']
         bone_struct = obj.pose.bones
         joint_names = bone_struct.keys()
-    
+        
         nowAnimInfo = poses[self.matched_frame_index]['animInfo'][0]
         sourcePose = poses[self.matched_frame_index] # for Inertialization
 
@@ -126,7 +126,7 @@ class MotionMatcher:
 
         targetPose = poses[self.matched_frame_index] # for Inertialization
         print('애니메이션 이름 : ', poses[self.matched_frame_index]['animInfo'][0]['name'], poses[self.matched_frame_index]['animInfo'][0]['index'])
- 
+
 
 
         # Inertialization - 블렌딩
@@ -142,7 +142,7 @@ class MotionMatcher:
             # 조인트 회전 정보 업데이트
             jointRotation = mathutils.Quaternion(poses[self.matched_frame_index]['joints'][joint]['rotation'])
             jointLocation = poses[self.matched_frame_index]['joints'][joint]['location'].copy()
-   
+
             # 힙 조인트 위치정보 업데이트                
             if joint == 'mixamorig2:Hips': 
               
@@ -224,7 +224,7 @@ class MotionMatcher:
             else: 
                 if self.inertialization.inertializeIndex < INITIALIZE_TIME: 
                     jointRotation = self.inertialization.inertializedRotations[joint]
-                bone_struct[joint].location = jointLocation            
+                bone_struct[joint].location = jointLocation             
                 bone_struct[joint].rotation_quaternion = jointRotation
 
         

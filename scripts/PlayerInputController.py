@@ -70,6 +70,47 @@ class ModalOperator(bpy.types.Operator):
     def __init__(self):
         print("Start")
         self.find_fix_pose()
+        # self.detect_collision()
+
+    def detect_collision(self):
+        # print('여기여기')
+        obj = bpy.data.objects['Armature']
+        bone_struct = obj.pose.bones
+        boneLocation = obj.rotation_euler.to_matrix() @ mathutils.Vector([bone_struct['mixamorig2:Hips'].location[0]/100,
+                                                                            bone_struct['mixamorig2:Hips'].location[1]/(100),
+                                                                            bone_struct['mixamorig2:Hips'].location[2]/100])
+        headLocation = obj.rotation_euler.to_matrix() @ mathutils.Vector([bone_struct['mixamorig2:HeadTop_End'].location[0]/100,
+                                                                            bone_struct['mixamorig2:HeadTop_End'].location[1]/(100),
+                                                                            bone_struct['mixamorig2:HeadTop_End'].location[2]/100])
+        globalXLocation = boneLocation[0]+obj.location[0]
+        globalYLocation = boneLocation[1]+obj.location[1]
+        globalZLocation = headLocation[2]+obj.location[2]
+        # mycube = bpy.data.objects['Cube.001']
+        mycube = {'x': globalXLocation, 'y':globalYLocation, 'z':bone_struct['mixamorig2:Head'].tail[1]/100}
+
+        for index in range(3):
+            obstacle = bpy.data.objects['Obstacle'+str(index)]
+            
+            # print('----index ', index, '------')
+            # print(obstacle.location.x, obstacle.location.y)
+            # print(bone_struct['mixamorig2:Hips'].location.x, bone_struct['mixamorig2:Hips'].location.y)  
+            # print(obstacle.location.x-obstacle.scale.x, mycube['x'], obstacle.location.x+obstacle.scale.x)
+            # print(obstacle.location.y-obstacle.scale.y, mycube['y'], obstacle.location.y+obstacle.scale.y)
+            # print(obstacle.location.z-obstacle.scale.z, mycube['z'], obstacle.location.z+obstacle.scale.z)
+            
+            WITHIN_X = False
+            WITHIN_Y = False
+            OVER_Z = False
+            
+            if obstacle.location.x-np.abs(obstacle.scale.x)<mycube['x'] < obstacle.location.x+np.abs(obstacle.scale.x):
+                WITHIN_X = True
+            if obstacle.location.y-np.abs(obstacle.scale.y)<mycube['y'] < obstacle.location.y+np.abs(obstacle.scale.y):
+                WITHIN_Y = True
+            if mycube['z'] > obstacle.location.z-np.abs(obstacle.scale.z):
+                OVER_Z = True
+
+            if  WITHIN_X and WITHIN_Y and OVER_Z:
+                print('장애물!!')
 
     # special pose index 찾는 함수 (기본 초기화 포즈/crouch 초기화 포즈/점프 초기화 포즈/승리 포즈)
     def find_fix_pose(self):
@@ -267,8 +308,11 @@ class ModalOperator(bpy.types.Operator):
         # 궤적 예측에 맞게 노란색 점 위치 설정
         for index, point in enumerate(printPoint):
             bpy.data.objects['Point'+ str(index+1)].location = point
+        
+        self.detect_collision()
 
-
+        rootVelocity = [rootVelocity[0],rootVelocity[1],rootVelocity[2]]
+        # return [hipHeight/2.25] + (np.array(rootVelocity)/10).tolist() + (np.array(LfootLocation)).tolist() + (np.array(RfootLocation)).tolist() + (np.array(LfootVelocity)/2).tolist() + (np.array(RfootVelocity)/2).tolist() + (np.array(trajectoryLocation)*7).tolist() 
         return [hipHeight/2.25] + (np.array(LfootLocation)).tolist() + (np.array(RfootLocation)).tolist() + (np.array(LfootVelocity)/2).tolist() + (np.array(RfootVelocity)/2).tolist() + (np.array(trajectoryLocation)*7).tolist() 
       
 

@@ -31,10 +31,11 @@ class MotionMatcher:
     rotationDiff = [0,0,0,0]
     locationDiff = [0,0,0]
     tree = ''
-    firstPoseIndex = 0
+    init_pose = 0
 
     isUpdated = False
     isCrouching = False
+    isJumping = False
     stopEnd = False
 
     inertialization = Inertialization()
@@ -43,6 +44,7 @@ class MotionMatcher:
      
     def __init__(self, IDLE_INDEX):
         self.matched_frame_index = IDLE_INDEX
+        self.init_pose = IDLE_INDEX
         self.motion = 'idle'
 
         # 트리 생성해주기
@@ -67,13 +69,23 @@ class MotionMatcher:
         print('MOTION matcher DEL')
   
 
-    def update(): 
-        print('UPDATE')
+    def findBestFrame(self,query): 
+        print('========= UPDATE_TIME =========')
+
+        # 쿼리벡터 넣어주기
+        distance, findIndex = self.tree.query(query) # 트리에서 검색
+        
+        # 현재 애니메이션/포즈 정보 저장해두기
+        newPoseIndex = features[findIndex]['poseIndex']     
+        newAnimInfo = poses[newPoseIndex]['animInfo'][0]
+
+        self.isUpdated = True
+        self.matched_frame_index = newPoseIndex    
 
     def getCurrentPose(self):
         return poses[self.matched_frame_index]['joints']
 
-    def updateMatchedMotion(self, query,  specialIndex=-1,crouch=False):
+    def updateMatchedMotion(self, query,  specialIndex=-1,crouch=False, jump=False):
         obj = bpy.data.objects['Armature']
         bone_struct = obj.pose.bones
         joint_names = bone_struct.keys()
@@ -81,39 +93,34 @@ class MotionMatcher:
         nowAnimInfo = poses[self.matched_frame_index]['animInfo'][0]
         sourcePose = poses[self.matched_frame_index] # for Inertialization
 
-          
+        if jump: self.isJumping = True
 
+        # 점프 중인 경우 - v키가 한번만 들어와도 점프동작을 처음부터 끝까지 수행하도록 함
         # 현재 세레모니, 웅크리기 멈춤 또는 서서 멈춤 동작 중이거나 애니메이션이 끝난 경우 ====> 이어서 재생
+        JUMPING = self.isJumping and 'Jump' in nowAnimInfo['name']
         KEEP_PLAYING = specialIndex!=-1 and poses[specialIndex]['animInfo'][0]['name'] == poses[self.matched_frame_index]['animInfo'][0]['name']
-        if  KEEP_PLAYING or self.matched_frame_index + 1 > nowAnimInfo['end']:
+        LAST_FRAME = self.matched_frame_index + 1 > nowAnimInfo['end']
+
+        if  KEEP_PLAYING or JUMPING or LAST_FRAME:
             if self.matched_frame_index + 1 <= nowAnimInfo['end']:
                 print('========= SAME ANIMATION CONTINUE ===========',)
                 self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
             else:
                 print('======= SAME ANIMATION FROM BEGINNING =======',)
-                self.matched_frame_index = nowAnimInfo['start']
-                self.isUpdated = True
+                if JUMPING:
+                    self.isJumping = False
+                    self.findBestFrame(query)
+                else: 
+                    self.isUpdated = True
+                    self.matched_frame_index = nowAnimInfo['start']
         # 특정 포즈를 지정해줘야 하는 경우
         elif specialIndex!=-1:    
             self.isUpdated = True
             self.matched_frame_index = specialIndex
         # 매칭 프레임 찾기
-        elif self.time == UPDATE_TIME :
-            print('========= UPDATE_TIME =========')
-
-            # 쿼리벡터 넣어주기
-            distance, findIndex = self.tree.query(query) # 트리에서 검색
-            
-            # 현재 애니메이션/포즈 정보 저장해두기
-            newPoseIndex = features[findIndex]['poseIndex']     
-            newAnimInfo = poses[newPoseIndex]['animInfo'][0]
-
-            self.isUpdated = True
-            self.matched_frame_index = newPoseIndex    
-
+        elif self.time == UPDATE_TIME : self.findBestFrame(query)
         # 계속 실행 ===> 프레임 1 씩 증가
-        else: 
-            self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
+        else: self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
 
 
 
@@ -151,9 +158,8 @@ class MotionMatcher:
                     
                     # 높이 고정 -> 웅크리기는 예외 조절
                     if crouch: 
-                        obj.location[2] = self.inertializeHipDiff/100
                         self.isCrouching = True
-                    else: obj.location[2] = 0
+                    obj.location[2] = targetPose['joints'][joint]['location'][1]/100
 
                     # T 포즈 회전각 구하는 과정  ====> 현재 포즈와 바꿀 포즈 사이의 각도 구하기 
                     # 현재 포즈의 회전 벡터
@@ -193,6 +199,8 @@ class MotionMatcher:
                     self.inertialization.updateHipsPosition(targetPose)
                     # crouch만 예외                  
                     if abs(self.inertializeHipDiff) > 20 and self.isCrouching: 
+                        print('CROUCH...', self.inertializeHipDiff)
+
                         # crouch -> stand
                         if self.inertializeHipDiff > 0: finalHipDiff = self.inertialization.inertializedHips[1]
                         # stand -> crouch

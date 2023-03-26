@@ -34,6 +34,7 @@ class QueryVector:
         self.footLocation = {'left': LfootLocation, 'right': RfootLocation}
         self.footSpeed =  {'left': LfootSpeed, 'right': RfootSpeed}
 
+
         # TODO: 손 정보 추가
 
 
@@ -70,7 +71,6 @@ class ModalOperator(bpy.types.Operator):
         print("Start")
         self.find_fix_pose()
 
-
     # special pose index 찾는 함수 (기본 초기화 포즈/crouch 초기화 포즈/점프 초기화 포즈/승리 포즈)
     def find_fix_pose(self):
         for index in range(len(poses)-1):
@@ -79,10 +79,9 @@ class ModalOperator(bpy.types.Operator):
             if self.init_pose == -1 and poses[index]['animInfo'][0]['name'] == 'Idle.fbx':
                 self.init_pose = index
                 self.motionMatcher = MotionMatcher(index)
-
             if self.finish_pose == -1 and poses[index]['animInfo'][0]['name'] == 'Victory Idle.fbx':
                 self.finish_pose = index
-            if self.crouch_init_pose == -1 and poses[index]['animInfo'][0]['name'] == 'Idle Crouching.fbx':
+            if self.crouch_init_pose == -1 and poses[index]['animInfo'][0]['name'] == 'Crouch Idle.fbx':
                 self.crouch_init_pose = index
             if self.jumping_down_pose == -1 and poses[index]['animInfo'][0]['name'] == 'Jumping Down.fbx':
                 self.jumping_down_pose = index
@@ -188,7 +187,7 @@ class ModalOperator(bpy.types.Operator):
         if np.linalg.norm(input_direction) > 0.0: 
             self.idle = False
             queryVector = self.createQueryVector(input_direction, self.KEY_MAP[CROUCH])
-            self.motionMatcher.updateMatchedMotion(queryVector, crouch = self.KEY_MAP[CROUCH])
+            self.motionMatcher.updateMatchedMotion(queryVector, crouch = self.KEY_MAP[CROUCH], jump = self.KEY_MAP[JUMP])
 
         # 골에 도착한 경우 세레모니 동작 
         elif globalXLocation > FINISH_LINE:

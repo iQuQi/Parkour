@@ -3,9 +3,9 @@ import mathutils
 import bpy
 # import torch
 from utils.common import *
-HALF_LIFE = 0.1
+HALF_LIFE = 0.2
 DELTA_TIME_DEFAULT = 1/30
-DELTA_TIME_HIP = 4/30
+DELTA_TIME_HIP = 6/30
 
 class Inertialization:
     inertializedRotations = {}

@@ -56,6 +56,9 @@ class ModalOperator(bpy.types.Operator):
     finish_pose = -1
     crouch_init_pose = -1
     jumping_down_pose = -1
+    falling_down_pose = -1
+    falling_down_pose2 = -1
+    fallingFirst = True
 
     
     # 모션 매쳐 객체
@@ -126,6 +129,10 @@ class ModalOperator(bpy.types.Operator):
                 self.crouch_init_pose = index
             if self.jumping_down_pose == -1 and poses[index]['animInfo'][0]['name'] == 'Jumping Down.fbx':
                 self.jumping_down_pose = index
+            if self.falling_down_pose == -1 and poses[index]['animInfo'][0]['name'] == 'Falling Into Pool.fbx':
+                self.falling_down_pose = index  
+            if self.falling_down_pose2 == -1 and poses[index]['animInfo'][0]['name'] == 'Falling Into Pool2.fbx':
+                self.falling_down_pose2 = index  
 
 
     # 소멸자
@@ -182,6 +189,7 @@ class ModalOperator(bpy.types.Operator):
                                                                             bone_struct['mixamorig2:Hips'].location[1]/(100),
                                                                             bone_struct['mixamorig2:Hips'].location[2]/100])
         globalXLocation = boneLocation[0]+obj.location[0]
+        globalYLocation = boneLocation[1]+obj.location[1]
 
         input_direction = np.array([0.0, 0.0, 0.0])
 
@@ -234,6 +242,16 @@ class ModalOperator(bpy.types.Operator):
         elif globalXLocation > FINISH_LINE:
             queryVector = self.createQueryVector(input_direction)
             self.motionMatcher.updateMatchedMotion(queryVector, self.finish_pose)
+
+        # 떨어지는 모션
+        elif globalYLocation > START_LINE:
+            queryVector = self.createQueryVector(input_direction)
+            if self.fallingFirst:
+                self.motionMatcher.updateMatchedMotion(queryVector, self.falling_down_pose)
+                self.fallingFirst = False
+            else:
+                self.motionMatcher.updateMatchedMotion(queryVector, self.falling_down_pose2)
+            
 
         # 웅크리기 상태로 인풋이 없는 경우 -> 웅크리기 초기화 자세 / 이외의 상태일 때 인풋이 없는 경우 -> 기본 초기화 자세
         else:

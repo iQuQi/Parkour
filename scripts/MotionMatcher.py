@@ -114,9 +114,10 @@ class MotionMatcher:
                     self.isUpdated = True
                     self.matched_frame_index = nowAnimInfo['start']
         # 특정 포즈를 지정해줘야 하는 경우
-        elif specialIndex!=-1:    
+        elif specialIndex!=-1:
             self.isUpdated = True
             self.matched_frame_index = specialIndex
+
         # 매칭 프레임 찾기
         elif self.time == UPDATE_TIME : self.findBestFrame(query)
         # 계속 실행 ===> 프레임 1 씩 증가

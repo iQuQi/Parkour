@@ -127,7 +127,12 @@ def fbx2PoseDB():
                 local_location = bone_struct[name].matrix_basis @ Vector((0,0,0))
                 local_rotation = bone_struct[name].rotation_quaternion
 
+                if anim_name == 'Falling Into Pool.fbx' and 'Hips' in name:
+                    local_location[Y] -= 200
+                if anim_name == 'Falling Into Pool2.fbx' and 'Hips' in name:
+                    local_location[Y] -= 300
                 location = [local_location[X], local_location[Y], local_location[Z]]
+                    
                 tail_location = [bone_struct[name].tail[X]/100, bone_struct[name].tail[Y]/100, bone_struct[name].tail[Z]/100]
                 rotation = [local_rotation.w,local_rotation.x,local_rotation.y,local_rotation.z]
 

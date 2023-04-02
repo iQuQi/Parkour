@@ -62,7 +62,6 @@ class ModalOperator(bpy.types.Operator):
     init_pose = -1
     finish_pose = -1
     crouch_init_pose = -1
-    jumping_down_pose = -1
     falling_down_pose = -1
     falling_down_pose2 = -1
     fallingFirst = True
@@ -125,7 +124,7 @@ class ModalOperator(bpy.types.Operator):
     # special pose index 찾는 함수 (기본 초기화 포즈/crouch 초기화 포즈/점프 초기화 포즈/승리 포즈)
     def find_fix_pose(self):
         for index in range(len(poses)-1):
-            if self.init_pose != -1 and self.finish_pose != -1 and self.crouch_init_pose != -1 and self.jumping_down_pose != -1:
+            if self.init_pose != -1 and self.finish_pose != -1 and self.crouch_init_pose != -1 and self.falling_down_pose != -1 and self.falling_down_pose2 != -1:
                 break
             if self.init_pose == -1 and poses[index]['animInfo'][0]['name'] == 'Idle.fbx':
                 self.init_pose = index
@@ -134,8 +133,6 @@ class ModalOperator(bpy.types.Operator):
                 self.finish_pose = index
             if self.crouch_init_pose == -1 and poses[index]['animInfo'][0]['name'] == 'Crouch Idle.fbx':
                 self.crouch_init_pose = index
-            if self.jumping_down_pose == -1 and poses[index]['animInfo'][0]['name'] == 'Jumping Down.fbx':
-                self.jumping_down_pose = index
             if self.falling_down_pose == -1 and poses[index]['animInfo'][0]['name'] == 'Falling Into Pool.fbx':
                 self.falling_down_pose = index  
             if self.falling_down_pose2 == -1 and poses[index]['animInfo'][0]['name'] == 'Falling Into Pool2.fbx':
@@ -255,27 +252,25 @@ class ModalOperator(bpy.types.Operator):
 
         # 골에 도착한 경우 세레모니 동작 
         elif globalLocation[0] > FINISH_LINE:
-            queryVector = self.createQueryVector(input_direction)
-            self.motionMatcher.updateMatchedMotion(queryVector, self.finish_pose)
+            self.motionMatcher.updateMatchedMotion(specialIndex = self.finish_pose)
 
         # 떨어지는 모션
         elif globalLocation[1] > START_LINE:
-            queryVector = self.createQueryVector(input_direction)
             if self.fallingFirst:
-                self.motionMatcher.updateMatchedMotion(queryVector, self.falling_down_pose)
+                self.motionMatcher.updateMatchedMotion(specialIndex = self.falling_down_pose)
                 self.fallingFirst = False
             else:
-                self.motionMatcher.updateMatchedMotion(queryVector, self.falling_down_pose2)
+                self.motionMatcher.updateMatchedMotion(specialIndex = self.falling_down_pose2)
             
 
         # 웅크리기 상태로 인풋이 없는 경우 -> 웅크리기 초기화 자세 / 이외의 상태일 때 인풋이 없는 경우 -> 기본 초기화 자세
         else:
-            queryVector = self.createQueryVector(input_direction)
-            if self.KEY_MAP[CROUCH]: self.motionMatcher.updateMatchedMotion(queryVector, self.crouch_init_pose, crouch = self.KEY_MAP[CROUCH])
+            if self.KEY_MAP[CROUCH]: 
+                self.motionMatcher.updateMatchedMotion(specialIndex = self.crouch_init_pose, crouch = self.KEY_MAP[CROUCH])
             elif self.idle:
                 self.motionMatcher.time = UPDATE_TIME
                 self.prevInput = [-1,-1,-1]
-                self.motionMatcher.updateMatchedMotion(queryVector, self.init_pose)
+                self.motionMatcher.updateMatchedMotion(specialIndex = self.init_pose)
         
         self.prevInput = input_direction
         if self.first: self.first = False

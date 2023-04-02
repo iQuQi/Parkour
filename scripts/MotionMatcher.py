@@ -10,41 +10,31 @@ from utils.common import *
 from scipy import spatial 
 import mathutils
 from math import radians
-
 from Inertialization import Inertialization
 
 #Combined Files Path
 COMBINED_FILE_PATH = os.path.abspath('dataSet.npy')
-TPOSE_NECK_ROTATION = [0.9987869262695312, 0.04907594621181488, -0.0013538144994527102, 0.0037928603123873472]
 
 class MotionMatcher:
-    motion = ''
     time = UPDATE_TIME
     matched_frame_index = 0
     firstPoseRotation = [0,0,0,0] # 초기 pose의 rotation
     firstPoseLocation = [0,0,0] # 초기 pose의 location
-    firstNowLocation = [0,0,0] 
-    firstNowRotation = [0,0,0,0]
     
     radian_xz = 0
-
-    rotationDiff = [0,0,0,0]
-    locationDiff = [0,0,0]
     tree = ''
     init_pose = 0
 
     isUpdated = False
     isCrouching = False
     isJumping = False
-    stopEnd = False
 
     inertialization = Inertialization()
-    inertialize = False
     inertializeHipDiff = 0 
+
     def __init__(self, IDLE_INDEX):
         self.matched_frame_index = IDLE_INDEX
         self.init_pose = IDLE_INDEX
-        self.motion = 'idle'
         # 트리 생성해주기
         point_list = []
         for i in range(len(features)-1):
@@ -85,7 +75,7 @@ class MotionMatcher:
     def getCurrentPose(self):
         return poses[self.matched_frame_index]['joints']
 
-    def updateMatchedMotion(self, query, specialIndex=-1, crouch=False, jump=False):
+    def updateMatchedMotion(self, query = [], specialIndex=-1, crouch=False, jump=False):
         obj = bpy.data.objects['Armature']
         bone_struct = obj.pose.bones
         joint_names = bone_struct.keys()
@@ -109,12 +99,15 @@ class MotionMatcher:
                 print('======= SAME ANIMATION FROM BEGINNING =======',)
                 if JUMPING:
                     self.isJumping = False
-                    self.findBestFrame(query)
+                    if specialIndex != -1: 
+                        self.isUpdated = True
+                        self.matched_frame_index = specialIndex
+                    else: self.findBestFrame(query)
                 else: 
                     self.isUpdated = True
                     self.matched_frame_index = nowAnimInfo['start']
         # 특정 포즈를 지정해줘야 하는 경우
-        elif specialIndex!=-1:
+        elif specialIndex != -1:
             self.isUpdated = True
             self.matched_frame_index = specialIndex
 
@@ -165,11 +158,10 @@ class MotionMatcher:
                     # T 포즈 회전각 구하는 과정  ====> 현재 포즈와 바꿀 포즈 사이의 각도 구하기 
                     # 현재 포즈의 회전 벡터
                     bone_origin = mathutils.Quaternion(bone_struct[joint].rotation_quaternion).to_matrix()
-                    bone_vector = bone_origin[:][0]+bone_origin[:][1]+bone_origin[:][2]
-
-                    # 타겟 포즈의 회전 벡터
+                    bone_vector = bone_origin[0] + bone_origin[1] + bone_origin[2]
+                    # 타_vector겟 포즈의 회전 벡터
                     joint_origin = mathutils.Quaternion(jointRotation).to_matrix()
-                    joint_vector = joint_origin[:][0]+joint_origin[:][1]+joint_origin[:][2]
+                    joint_vector =  joint_origin[0] + joint_origin[1] + joint_origin[2]
 
                     joint_xz = 0
                     bone_xz = 0

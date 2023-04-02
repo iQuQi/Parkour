@@ -82,19 +82,14 @@ class ModalOperator(bpy.types.Operator):
         # self.detect_collision()
 
     def detect_collision(self):
-        # print('여기여기')
         obj = bpy.data.objects['Armature']
         bone_struct = obj.pose.bones
         boneLocation = obj.rotation_euler.to_matrix() @ mathutils.Vector([bone_struct['mixamorig2:Hips'].location[0]/100,
                                                                             bone_struct['mixamorig2:Hips'].location[1]/(100),
                                                                             bone_struct['mixamorig2:Hips'].location[2]/100])
-        headLocation = obj.rotation_euler.to_matrix() @ mathutils.Vector([bone_struct['mixamorig2:HeadTop_End'].location[0]/100,
-                                                                            bone_struct['mixamorig2:HeadTop_End'].location[1]/(100),
-                                                                            bone_struct['mixamorig2:HeadTop_End'].location[2]/100])
         globalXLocation = boneLocation[0]+obj.location[0]
         globalYLocation = boneLocation[1]+obj.location[1]
-        globalZLocation = headLocation[2]+obj.location[2]
-        # mycube = bpy.data.objects['Cube.001']
+        
         mycube = {'x': globalXLocation, 'y':globalYLocation, 'z':bone_struct['mixamorig2:Head'].tail[1]/100}
 
         for index in range(3):
@@ -248,7 +243,7 @@ class ModalOperator(bpy.types.Operator):
         if np.linalg.norm(input_direction) > 0.0: 
             self.idle = False
             queryVector = self.createQueryVector(input_direction, self.KEY_MAP[CROUCH])
-            self.motionMatcher.updateMatchedMotion(queryVector, crouch = self.KEY_MAP[CROUCH], jump = self.KEY_MAP[JUMP])
+            self.motionMatcher.updateMatchedMotion(query = queryVector, crouch = self.KEY_MAP[CROUCH], jump = self.KEY_MAP[JUMP])
 
         # 골에 도착한 경우 세레모니 동작 
         elif globalLocation[0] > FINISH_LINE:

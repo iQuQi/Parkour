@@ -91,28 +91,28 @@ class MotionMatcher:
         KEEP_PLAYING = specialIndex!=-1 and poses[specialIndex]['animInfo'][0]['name'] == poses[self.matched_frame_index]['animInfo'][0]['name']
         LAST_FRAME = self.matched_frame_index + 1 > nowAnimInfo['end']
 
-        if  KEEP_PLAYING or JUMPING or LAST_FRAME:
+        if  KEEP_PLAYING or JUMPING:
             if self.matched_frame_index + 1 <= nowAnimInfo['end']:
                 print('========= SAME ANIMATION CONTINUE ===========',)
                 self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
-            else:
-                print('======= SAME ANIMATION FROM BEGINNING =======',)
-                if JUMPING:
-                    self.isJumping = False
-                    if specialIndex != -1: 
-                        self.isUpdated = True
-                        self.matched_frame_index = specialIndex
-                    else: self.findBestFrame(query)
-                else: 
+            elif JUMPING:
+                self.isJumping = False
+                if specialIndex != -1: 
                     self.isUpdated = True
-                    self.matched_frame_index = nowAnimInfo['start']
+                    self.matched_frame_index = specialIndex
+                else: 
+                    self.time = UPDATE_TIME
+                    self.findBestFrame(query)
+               
         # 특정 포즈를 지정해줘야 하는 경우
         elif specialIndex != -1:
             self.isUpdated = True
             self.matched_frame_index = specialIndex
 
         # 매칭 프레임 찾기
-        elif self.time == UPDATE_TIME : self.findBestFrame(query)
+        elif self.time == UPDATE_TIME or LAST_FRAME :
+            self.time = UPDATE_TIME 
+            self.findBestFrame(query)
         # 계속 실행 ===> 프레임 1 씩 증가
         else: self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
 
@@ -192,7 +192,6 @@ class MotionMatcher:
                     self.inertialization.updateHipsPosition(targetPose)
                     # crouch만 예외                  
                     if abs(self.inertializeHipDiff) > 20 and self.isCrouching: 
-                        print('CROUCH...', self.inertializeHipDiff)
 
                         # crouch -> stand
                         if self.inertializeHipDiff > 0: finalHipDiff = self.inertialization.inertializedHips[1]

@@ -158,7 +158,7 @@ class ModalOperator(bpy.types.Operator):
 
         # 카메라 위치 초기화
         camera = bpy.context.scene.camera 
-        camera.location = [0,18,2]
+        camera.location = [0,20,3]
             
 
     def execute(self, context):

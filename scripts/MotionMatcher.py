@@ -12,6 +12,8 @@ import mathutils
 from math import radians
 from Inertialization import Inertialization
 
+
+
 #Combined Files Path
 COMBINED_FILE_PATH = os.path.abspath('dataSet.npy')
 
@@ -79,6 +81,9 @@ class MotionMatcher:
         obj = bpy.data.objects['Armature']
         bone_struct = obj.pose.bones
         joint_names = bone_struct.keys()
+
+        # Get a bone.
+        arm = obj.data
         
         nowAnimInfo = poses[self.matched_frame_index]['animInfo'][0]
         sourcePose = poses[self.matched_frame_index] # for Inertialization
@@ -132,6 +137,7 @@ class MotionMatcher:
             self.inertialization.inertializeIndex += 1
 
         # 해당하는 프레임으로 애니메이션 교체 & 재생 
+        currentFrame = bpy.context.scene.frame_current
         for joint in joint_names:
             # 조인트 회전 정보 업데이트
             jointRotation = mathutils.Quaternion(poses[self.matched_frame_index]['joints'][joint]['rotation'])
@@ -219,9 +225,31 @@ class MotionMatcher:
                 bone_struct[joint].location = jointLocation             
                 bone_struct[joint].rotation_quaternion = jointRotation
 
-        
+            # Set the keyframe at frame 1.
+            bone_struct[joint].keyframe_insert(
+                data_path='location',
+                frame=currentFrame+1)
+            bone_struct[joint].keyframe_insert(
+                data_path='rotation_quaternion',
+                frame=currentFrame+1)
+
+            bone_struct[joint].keyframe_delete(
+                data_path='location',
+                frame=currentFrame-1)
+            bone_struct[joint].keyframe_delete(
+                data_path='rotation_quaternion',
+                frame=currentFrame-1)
+            
+
         # 시간 업데이트 & 변수 초기화
         self.time = (self.time + 1) % (UPDATE_TIME + 1)
         self.isUpdated = False
 
      
+
+     
+
+
+
+
+

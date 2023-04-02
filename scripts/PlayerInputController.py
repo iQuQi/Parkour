@@ -200,7 +200,7 @@ class ModalOperator(bpy.types.Operator):
 
         # 카메라 줌 인아웃
         zoom_speed = 0.02
-        zoom_direction = [camera.location[0]-globalLocation[0],camera.location[1]-globalLocation[1],camera.location[2]-globalLocation[2]]
+        zoom_direction = [globalLocation[0]-camera.location[0],globalLocation[1]-camera.location[1],globalLocation[2]-camera.location[2]]
         if self.KEY_MAP[ZOOM_IN]:
             camera.location = [camera.location[0]+zoom_direction[0]*zoom_speed,camera.location[1]+zoom_direction[1]*zoom_speed,camera.location[2]+zoom_direction[2]*zoom_speed]
         if self.KEY_MAP[ZOOM_OUT]:

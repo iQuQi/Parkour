@@ -246,7 +246,7 @@ class ModalOperator(bpy.types.Operator):
             self.motionMatcher.updateMatchedMotion(query = queryVector, crouch = self.KEY_MAP[CROUCH], jump = self.KEY_MAP[JUMP])
 
         # 골에 도착한 경우 세레모니 동작 
-        elif globalLocation[0] > FINISH_LINE:
+        elif globalLocation[1] > FINISH_LINE_Y and globalLocation[0] > FINISH_LINE_X:
             self.motionMatcher.updateMatchedMotion(specialIndex = self.finish_pose)
 
         # 떨어지는 모션

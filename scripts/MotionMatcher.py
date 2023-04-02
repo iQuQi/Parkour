@@ -152,13 +152,12 @@ class MotionMatcher:
                     self.firstPoseRotation = jointRotation # 초기 pose의 rotation
                     self.firstPoseLocation = jointLocation # 초기 pose의 location
 
-                    # T 포즈의 위치 이동 & 높이 고정
+                    # T 포즈의 위치 이동 
                     obj.location = addArray3(obj.location,obj.rotation_euler.to_matrix()@mathutils.Vector([bone_struct[joint].location[0]/100,bone_struct[joint].location[1]/100,bone_struct[joint].location[2]/100]))
                     self.inertializeHipDiff = targetPose['joints'][joint]['location'][1] - sourcePose['joints'][joint]['location'][1]
                     
                     # 높이 고정 -> 웅크리기는 예외 조절
-                    if crouch: 
-                        self.isCrouching = True
+                    if crouch: self.isCrouching = True
                     obj.location[2] = targetPose['joints'][joint]['location'][1]/100
 
                     # T 포즈 회전각 구하는 과정  ====> 현재 포즈와 바꿀 포즈 사이의 각도 구하기 
@@ -173,14 +172,10 @@ class MotionMatcher:
                     bone_xz = 0
 
                     # 아크 탄젠트로 각각의 각도 구해서 빼주기
-                    if joint_vector[0]>0:
-                        joint_xz = np.arctan(joint_vector[2]/joint_vector[0])
-                    elif joint_vector[0]<0:
-                        joint_xz = np.arctan(joint_vector[2]/joint_vector[0]) + np.deg2rad(180)
-                    if bone_vector[0]>0:
-                        bone_xz = np.arctan(bone_vector[2]/bone_vector[0])
-                    elif bone_vector[0]<0:
-                        bone_xz = np.arctan(bone_vector[2]/bone_vector[0]) + np.deg2rad(180)
+                    if joint_vector[0]>0: joint_xz = np.arctan(joint_vector[2]/joint_vector[0])
+                    elif joint_vector[0]<0: joint_xz = np.arctan(joint_vector[2]/joint_vector[0]) + np.deg2rad(180)
+                    if bone_vector[0]>0: bone_xz = np.arctan(bone_vector[2]/bone_vector[0])
+                    elif bone_vector[0]<0: bone_xz = np.arctan(bone_vector[2]/bone_vector[0]) + np.deg2rad(180)
 
                     self.radian_xz = joint_xz - bone_xz
 

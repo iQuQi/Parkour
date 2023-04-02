@@ -15,6 +15,8 @@ CROUCH = 'C'
 RUN = 'X'
 ROTATE_L = 'Z'
 ROTATE_R = 'B'
+ZOOM_IN = 'D'
+ZOOM_OUT = 'F'
 ZERO = 0.000001
 
 
@@ -43,7 +45,12 @@ class ModalOperator(bpy.types.Operator):
     bl_idname = "object.modal_operator"
     bl_label = "Simple Modal Operator"
 
-    KEY_MAP = {'UP_ARROW': False, 'DOWN_ARROW': False, 'LEFT_ARROW': False, 'RIGHT_ARROW': False, CROUCH: False, JUMP: False, RUN: False, ROTATE_R: False, ROTATE_L: False }
+    KEY_MAP = {'UP_ARROW': False, 'DOWN_ARROW': False, 
+                'LEFT_ARROW': False, 'RIGHT_ARROW': False, 
+                CROUCH: False, JUMP: False, RUN: False, 
+                ROTATE_R: False, ROTATE_L: False,
+                ZOOM_IN: False, ZOOM_OUT: False
+                }
 
     # 지수 곡선 인자
     nowLocation =[0,0,0] 
@@ -188,17 +195,25 @@ class ModalOperator(bpy.types.Operator):
         boneLocation = obj.rotation_euler.to_matrix() @ mathutils.Vector([bone_struct['mixamorig2:Hips'].location[0]/100,
                                                                             bone_struct['mixamorig2:Hips'].location[1]/(100),
                                                                             bone_struct['mixamorig2:Hips'].location[2]/100])
-        globalXLocation = boneLocation[0]+obj.location[0]
-        globalYLocation = boneLocation[1]+obj.location[1]
+        globalLocation = [boneLocation[0]+obj.location[0], boneLocation[1]+obj.location[1],boneLocation[2]+obj.location[2]]
 
         input_direction = np.array([0.0, 0.0, 0.0])
 
-        # 뷰 회전                
+        # 카메라 회전                
         camera = bpy.context.scene.camera 
         if self.KEY_MAP[ROTATE_R]:
             camera.location = mathutils.Euler([0.0,0.0,-1/40],'XYZ').to_matrix() @ camera.location
         if self.KEY_MAP[ROTATE_L]:
             camera.location = mathutils.Euler([0.0,0.0,1/40],'XYZ').to_matrix() @ camera.location
+
+        # 카메라 줌 인아웃
+        zoom_speed = 0.02
+        zoom_direction = [camera.location[0]-globalLocation[0],camera.location[1]-globalLocation[1],camera.location[2]-globalLocation[2]]
+        if self.KEY_MAP[ZOOM_IN]:
+            camera.location = [camera.location[0]+zoom_direction[0]*zoom_speed,camera.location[1]+zoom_direction[1]*zoom_speed,camera.location[2]+zoom_direction[2]*zoom_speed]
+        if self.KEY_MAP[ZOOM_OUT]:
+            camera.location = [camera.location[0]-zoom_direction[0]*zoom_speed,camera.location[1]-zoom_direction[1]*zoom_speed,camera.location[2]-zoom_direction[2]*zoom_speed]
+
 
         # 상하
         if self.KEY_MAP['UP_ARROW']:
@@ -239,12 +254,12 @@ class ModalOperator(bpy.types.Operator):
             self.motionMatcher.updateMatchedMotion(queryVector, crouch = self.KEY_MAP[CROUCH], jump = self.KEY_MAP[JUMP])
 
         # 골에 도착한 경우 세레모니 동작 
-        elif globalXLocation > FINISH_LINE:
+        elif globalLocation[0] > FINISH_LINE:
             queryVector = self.createQueryVector(input_direction)
             self.motionMatcher.updateMatchedMotion(queryVector, self.finish_pose)
 
         # 떨어지는 모션
-        elif globalYLocation > START_LINE:
+        elif globalLocation[1] > START_LINE:
             queryVector = self.createQueryVector(input_direction)
             if self.fallingFirst:
                 self.motionMatcher.updateMatchedMotion(queryVector, self.falling_down_pose)

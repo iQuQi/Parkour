@@ -266,6 +266,8 @@ class ModalOperator(bpy.types.Operator):
                 self.motionMatcher.time = UPDATE_TIME
                 self.prevInput = [-1,-1,-1]
                 self.motionMatcher.updateMatchedMotion(specialIndex = self.init_pose)
+            else:
+                self.motionMatcher.updateMatchedMotion()
         
         self.prevInput = input_direction
         if self.first: self.first = False

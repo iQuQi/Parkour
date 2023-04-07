@@ -12,11 +12,6 @@ import mathutils
 from math import radians
 from Inertialization import Inertialization
 
-
-
-#Combined Files Path
-COMBINED_FILE_PATH = os.path.abspath('dataSet.npy')
-
 class MotionMatcher:
     time = UPDATE_TIME
     matched_frame_index = 0
@@ -63,6 +58,8 @@ class MotionMatcher:
 
     def findBestFrame(self,query): 
         print('========= UPDATE_TIME =========')
+
+        if not query: return
 
         # 쿼리벡터 넣어주기
         distance, findIndex = self.tree.query(query) # 트리에서 검색

@@ -216,17 +216,17 @@ class ModalOperator(bpy.types.Operator):
         # 좌우
         if self.KEY_MAP['LEFT_ARROW']:
             input_direction[X] += GOAL
-            if input_direction[Z]>0: input_direction[Z] -= GOAL/3
+            if input_direction[Z]>0: input_direction[Z] -= GOAL/2
             else: input_direction[Z] += GOAL/2
         if self.KEY_MAP['RIGHT_ARROW']:
             input_direction[X] += (-1*GOAL) 
-            if input_direction[Z]>0: input_direction[Z] -= GOAL/3
+            if input_direction[Z]>0: input_direction[Z] -= GOAL/2
             else: input_direction[Z] += GOAL/2
 
         # 웅크리기 / 점프 / 달리기
         if self.KEY_MAP[CROUCH]:
             if input_direction[Z] < 0: input_direction[Z] -= GOAL
-            elif input_direction[Z] > 0 : input_direction[X] += GOAL/3
+            elif input_direction[X] == 0: input_direction[Z] *= 1.2
         elif self.KEY_MAP[JUMP]:
             input_direction = np.array([0, GOAL*3, input_direction[Z]/3])
             if input_direction[Z] < 0: input_direction[Z] -= GOAL*3
@@ -299,6 +299,7 @@ class ModalOperator(bpy.types.Operator):
         speed = 1
         if self.KEY_MAP[RUN]: speed *= 2
         # 웅크리기 상태에 따라 힙 위치 조정
+    
         if crouch: hipHeight = CROUCH_HIP_HEIGHT
         else: hipHeight = DEFAULT_HIP_HEIGHT
 

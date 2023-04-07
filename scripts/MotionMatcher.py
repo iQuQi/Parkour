@@ -69,7 +69,9 @@ class MotionMatcher:
         newAnimInfo = poses[newPoseIndex]['animInfo'][0]
 
         self.isUpdated = True
-        self.matched_frame_index = newPoseIndex    
+        self.matched_frame_index = newPoseIndex   
+        print('애니메이션 이름 : ', poses[self.matched_frame_index]['animInfo'][0]['name'], poses[self.matched_frame_index]['animInfo'][0]['index'])
+ 
 
     def getCurrentPose(self):
         return poses[self.matched_frame_index]['joints']
@@ -121,7 +123,6 @@ class MotionMatcher:
 
 
         targetPose = poses[self.matched_frame_index] # for Inertialization
-        print('애니메이션 이름 : ', poses[self.matched_frame_index]['animInfo'][0]['name'], poses[self.matched_frame_index]['animInfo'][0]['index'])
 
 
 

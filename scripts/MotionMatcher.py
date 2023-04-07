@@ -136,6 +136,8 @@ class MotionMatcher:
 
         # 해당하는 프레임으로 애니메이션 교체 & 재생 
         currentFrame = bpy.context.scene.frame_current
+        nextFrame = currentFrame + 1
+        if nextFrame >  PLAY_END : nextFrame = PLAY_START
         for joint in joint_names:
             # 조인트 회전 정보 업데이트
             jointRotation = mathutils.Quaternion(poses[self.matched_frame_index]['joints'][joint]['rotation'])
@@ -221,19 +223,17 @@ class MotionMatcher:
             # Set the keyframe at frame 1.
             bone_struct[joint].keyframe_insert(
                 data_path='location',
-                frame=currentFrame+1)
+                frame=nextFrame)
             bone_struct[joint].keyframe_insert(
                 data_path='rotation_quaternion',
-                frame=currentFrame+1)
+                frame=nextFrame)
 
             bone_struct[joint].keyframe_delete(
                 data_path='location',
-                frame=currentFrame-1)
+                frame=currentFrame)
             bone_struct[joint].keyframe_delete(
                 data_path='rotation_quaternion',
-                frame=currentFrame-1)
-            
-
+                frame=currentFrame)
         # 시간 업데이트 & 변수 초기화
         self.time = (self.time + 1) % (UPDATE_TIME + 1)
         self.isUpdated = False

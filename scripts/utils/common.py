@@ -18,6 +18,8 @@ FINISH_LINE_Y = -3
 START_LINE = 1
 IDLE_INDEX = -1
 INITIALIZE_TIME = 30
+PLAY_START = 280
+PLAY_END = 310
 DEFAULT_EULER = [1.5708,0,0.0320]
           
 upper_dir_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))

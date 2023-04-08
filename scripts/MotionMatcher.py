@@ -53,7 +53,20 @@ class MotionMatcher:
        
 
     def __del__(self):
-        print('MOTION matcher DEL')
+        print('---- Motion Matcher Del ----')
+        obj = bpy.data.objects['Armature']
+        bone_struct = obj.pose.bones
+        joint_names = bone_struct.keys()
+
+        # 프레임 초기화
+        for joint in joint_names:
+            for now_frame in range(PLAY_START, PLAY_END+1):
+                bone_struct[joint].keyframe_delete(
+                        data_path='location',
+                        frame=now_frame)
+                bone_struct[joint].keyframe_delete(
+                    data_path='rotation_quaternion',
+                    frame=now_frame)
   
 
     def findBestFrame(self,query): 

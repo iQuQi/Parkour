@@ -59,8 +59,9 @@ class MotionMatcher:
         joint_names = bone_struct.keys()
 
         # 프레임 초기화
-        for joint in joint_names:
-            for now_frame in range(PLAY_START, PLAY_END+1):
+        for now_frame in range(PLAY_START, PLAY_END+1):
+            print('INIT FRAME:', now_frame)
+            for joint in joint_names:
                 bone_struct[joint].keyframe_delete(
                         data_path='location',
                         frame=now_frame)

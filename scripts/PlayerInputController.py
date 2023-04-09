@@ -81,7 +81,7 @@ class ModalOperator(bpy.types.Operator):
         self.find_fix_pose()
         # self.detect_collision()
 
-    def detect_collision(self):
+    def detect_falling(self):
         obj = bpy.data.objects['Armature']
         bone_struct = obj.pose.bones
         boneLocation = obj.rotation_euler.to_matrix() @ mathutils.Vector([bone_struct['mixamorig2:Hips'].location[0]/100,
@@ -93,28 +93,40 @@ class ModalOperator(bpy.types.Operator):
         mycube = {'x': globalXLocation, 'y':globalYLocation, 'z':bone_struct['mixamorig2:Head'].tail[1]/100}
 
         for index in range(3):
-            obstacle = bpy.data.objects['Obstacle'+str(index)]
-            
-            # print('----index ', index, '------')
-            # print(obstacle.location.x, obstacle.location.y)
-            # print(bone_struct['mixamorig2:Hips'].location.x, bone_struct['mixamorig2:Hips'].location.y)  
-            # print(obstacle.location.x-obstacle.scale.x, mycube['x'], obstacle.location.x+obstacle.scale.x)
-            # print(obstacle.location.y-obstacle.scale.y, mycube['y'], obstacle.location.y+obstacle.scale.y)
-            # print(obstacle.location.z-obstacle.scale.z, mycube['z'], obstacle.location.z+obstacle.scale.z)
-            
-            WITHIN_X = False
-            WITHIN_Y = False
-            OVER_Z = False
-            
-            if obstacle.location.x-np.abs(obstacle.scale.x)<mycube['x'] < obstacle.location.x+np.abs(obstacle.scale.x):
-                WITHIN_X = True
-            if obstacle.location.y-np.abs(obstacle.scale.y)<mycube['y'] < obstacle.location.y+np.abs(obstacle.scale.y):
-                WITHIN_Y = True
-            if mycube['z'] > obstacle.location.z-np.abs(obstacle.scale.z):
-                OVER_Z = True
+            obstacle = bpy.data.objects['Obstacle-Log'+str(index)]
+            if self.detect_is_inside(obstacle, mycube):
+                print('들어있음', 'Obstacle-Log'+str(index))
+                return False
 
-            if  WITHIN_X and WITHIN_Y and OVER_Z:
-                print('장애물!!')
+
+        for index in range(4):
+            obstacle = bpy.data.objects['Stage'+str(index)]
+            if self.detect_is_inside(obstacle, mycube):
+                print('들어있음2','Stage'+str(index))
+                return False
+
+
+        return True
+                
+    def detect_is_inside(self, obstacle, mycube):
+        WITHIN_X = False
+        WITHIN_Y = False
+        OVER_Z = False
+        
+        if obstacle.location.x-np.abs(obstacle.dimensions.x/2)<mycube['x'] < obstacle.location.x+np.abs(obstacle.dimensions.x/2):
+            WITHIN_X = True
+        if obstacle.location.y-np.abs(obstacle.dimensions.y/2)<mycube['y'] < obstacle.location.y+np.abs(obstacle.dimensions.y/2):
+            WITHIN_Y = True
+        if mycube['z'] > obstacle.location.z-np.abs(obstacle.dimensions.z):
+            OVER_Z = True
+
+        if  WITHIN_X and WITHIN_Y:
+            print('출력 확인')
+            print(obstacle.location.x-np.abs(obstacle.dimensions.x/2), mycube['x'], obstacle.location.x+np.abs(obstacle.dimensions.x/2))
+            print(obstacle.location.y-np.abs(obstacle.dimensions.y/2), mycube['y'], obstacle.location.y+np.abs(obstacle.dimensions.y/2))
+            return True
+        else: 
+            return False
 
     # special pose index 찾는 함수 (기본 초기화 포즈/crouch 초기화 포즈/점프 초기화 포즈/승리 포즈)
     def find_fix_pose(self):
@@ -233,14 +245,22 @@ class ModalOperator(bpy.types.Operator):
         elif self.KEY_MAP[RUN]:
             input_direction *= 3
 
-
         # 이전 인풋과 현재 인풋이 다른 경우 즉시 교체
         if not np.array_equal(self.prevInput, input_direction):
             print('========== INPUT CHANAGE ==========')
             self.motionMatcher.time = UPDATE_TIME
 
+        # 떨어지는 모션
+        if self.detect_falling():
+            print('벗어남!!')
+            if self.fallingFirst:
+                self.motionMatcher.updateMatchedMotion(specialIndex = self.falling_down_pose)
+                self.fallingFirst = False
+            else:
+                self.motionMatcher.updateMatchedMotion(specialIndex = self.falling_down_pose2)
+
         # 입력의 크기가 0보다 큰 경우 -> 유효한 쿼리 생성후 업데이트 함수 호출
-        if np.linalg.norm(input_direction) > 0.0: 
+        elif np.linalg.norm(input_direction) > 0.0: 
             self.idle = False
             queryVector = self.createQueryVector(input_direction, self.KEY_MAP[CROUCH])
             self.motionMatcher.updateMatchedMotion(query = queryVector, crouch = self.KEY_MAP[CROUCH], jump = self.KEY_MAP[JUMP])
@@ -248,15 +268,6 @@ class ModalOperator(bpy.types.Operator):
         # 골에 도착한 경우 세레모니 동작 
         elif globalLocation[1] > FINISH_LINE_Y and globalLocation[0] > FINISH_LINE_X:
             self.motionMatcher.updateMatchedMotion(specialIndex = self.finish_pose)
-
-        # 떨어지는 모션
-        elif globalLocation[1] > START_LINE:
-            if self.fallingFirst:
-                self.motionMatcher.updateMatchedMotion(specialIndex = self.falling_down_pose)
-                self.fallingFirst = False
-            else:
-                self.motionMatcher.updateMatchedMotion(specialIndex = self.falling_down_pose2)
-            
 
         # 웅크리기 상태로 인풋이 없는 경우 -> 웅크리기 초기화 자세 / 이외의 상태일 때 인풋이 없는 경우 -> 기본 초기화 자세
         else:
@@ -334,8 +345,6 @@ class ModalOperator(bpy.types.Operator):
         # 궤적 예측에 맞게 노란색 점 위치 설정
         for index, point in enumerate(printPoint):
             bpy.data.objects['Point'+ str(index+1)].location = point
-        
-        self.detect_collision()
 
         rootVelocity = [rootVelocity[0],rootVelocity[1],rootVelocity[2]]
         # return [hipHeight/2.25] + (np.array(rootVelocity)/10).tolist() + (np.array(LfootLocation)).tolist() + (np.array(RfootLocation)).tolist() + (np.array(LfootVelocity)/2).tolist() + (np.array(RfootVelocity)/2).tolist() + (np.array(trajectoryLocation)*7).tolist() 

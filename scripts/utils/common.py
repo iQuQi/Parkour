@@ -4,7 +4,7 @@ import os
 import json
 
 VECTOR3 = [0,0,0]
-KEY_CODE = {'D':2,'F':3,'Z': 6,'X': 7, 'C': 8,'V': 9, 'B': 10,'SPACE': 49, 'LEFT': 123, 'RIGHT': 124, 'DOWN' : 125, 'UP': 126}
+KEY_CODE = {'A':0, 'S':1, 'D':2, 'F':3,'Z': 6,'X': 7, 'C': 8,'V': 9, 'B': 10,'SPACE': 49, 'LEFT': 123, 'RIGHT': 124, 'DOWN' : 125, 'UP': 126}
 X = 0
 Y = 1
 Z = 2

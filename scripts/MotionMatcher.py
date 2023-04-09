@@ -222,13 +222,17 @@ class MotionMatcher:
 
                 for index in range(5): # 0~4까지 피쳐 위치 출력 -> 파란색 점들
                     featurePoint = bpy.data.objects['Feature'+ str(index+1)]
-                    if self.matched_frame_index + index*4 <= poses[self.matched_frame_index]['animInfo'][0]['end']:
-                        poseLocation = poses[self.matched_frame_index + index*4]['joints'][joint]['location']
-                        diff = obj.rotation_euler.to_matrix() @ mathutils.Vector(substractArray3(poseLocation, self.firstPoseLocation))
-                        featurePoint.hide_viewport = False
-                        featurePoint.location = [diff[0]/100 + obj.location[0], diff[1]/100 + obj.location[1], 0]
+                    if 'Falling Into Pool' in poses[self.matched_frame_index]['animInfo'][0]['name']:
+                        featurePoint.hide_viewport = True # 물에 빠진 경우 점 숨기기
                     else:
-                        featurePoint.hide_viewport = True # 인덱스가 벗어난 경우 해당 점은 숨긴다
+                        featurePoint.hide_viewport = False
+                        if self.matched_frame_index + index*4 <= poses[self.matched_frame_index]['animInfo'][0]['end']:
+                            poseLocation = poses[self.matched_frame_index + index*4]['joints'][joint]['location']
+                            diff = obj.rotation_euler.to_matrix() @ mathutils.Vector(substractArray3(poseLocation, self.firstPoseLocation))
+                            featurePoint.hide_viewport = False
+                            featurePoint.location = [diff[0]/100 + obj.location[0], diff[1]/100 + obj.location[1], 0]
+                        else:
+                            featurePoint.hide_viewport = True # 인덱스가 벗어난 경우 해당 점은 숨긴다
 
             # 나머지 조인트 위치정보 업데이트
             else: 

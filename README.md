@@ -9,7 +9,7 @@
 <details>
 <summary>Motion Graph</summary>
 <div markdown="1">
-
+![모션그래프](/uploads/c080b8bf41c1177de874fe833ed7c044/Untitled__2_.png)
 
 ✏️ **포즈와 속도가 어느정도 근접하게 유사해지면 전이점(transition point)에 다다름**
 
@@ -29,6 +29,7 @@
 <details>
 <summary>Motion Matching의 전체 흐름</summary>
 <div markdown="1">
+![모션매칭](/uploads/a9fd4782328fa2bbca295edd176c9d2d/Untitled__3_.png)
 
 ### 포즈 DB 생성
 
@@ -61,4 +62,10 @@
 </div>
 </details>
 
+<br><br>
 
+# 🎞️ 개발 프로세스
+
+![개발프로세스](/uploads/790fc497b93c78d1b7cedb7090355c04/Untitled__4_.png)
+
+<br><br>

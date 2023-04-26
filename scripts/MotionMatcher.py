@@ -22,6 +22,7 @@ class MotionMatcher:
     tree = ''
     init_pose = 0
 
+    isReset = False
     isUpdated = False
     isCrouching = False
     isJumping = False
@@ -53,21 +54,8 @@ class MotionMatcher:
        
 
     def __del__(self):
+        # PlayerInputController로 이동
         print('---- Motion Matcher Del ----')
-        obj = bpy.data.objects['Armature']
-        bone_struct = obj.pose.bones
-        joint_names = bone_struct.keys()
-
-        # 프레임 초기화
-        for now_frame in range(PLAY_START, PLAY_END+1):
-            # print('INIT FRAME:', now_frame)
-            for joint in joint_names:
-                bone_struct[joint].keyframe_delete(
-                        data_path='location',
-                        frame=now_frame)
-                bone_struct[joint].keyframe_delete(
-                    data_path='rotation_quaternion',
-                    frame=now_frame)
   
 
     def findBestFrame(self,query): 
@@ -90,7 +78,7 @@ class MotionMatcher:
     def getCurrentPose(self):
         return poses[self.matched_frame_index]['joints']
 
-    def updateMatchedMotion(self, query = [], specialIndex=-1, crouch=False, jump=False):
+    def updateMatchedMotion(self, query = [], specialIndex=-1, specialAnimName='', crouch=False, jump=False):
         obj = bpy.data.objects['Armature']
         bone_struct = obj.pose.bones
         joint_names = bone_struct.keys()
@@ -103,11 +91,10 @@ class MotionMatcher:
         # 점프 중인 경우 - v키가 한번만 들어와도 점프동작을 처음부터 끝까지 수행하도록 함
         # 현재 세레모니, 웅크리기 멈춤 또는 서서 멈춤 동작 중이거나 애니메이션이 끝난 경우 ====> 이어서 재생
         JUMPING = self.isJumping and 'Jump' in nowAnimInfo['name']
-        FALLING_REPEAT = specialIndex!=-1 and 'Falling Into Pool2' in nowAnimInfo['name']
+        FALLING_REPEAT = specialAnimName == 'Falling Into Pool2.fbx' and 'Falling Into Pool2' in nowAnimInfo['name']
         KEEP_PLAYING = specialIndex!=-1 and poses[specialIndex]['animInfo'][0]['name'] == poses[self.matched_frame_index]['animInfo'][0]['name']
         LAST_FRAME = self.matched_frame_index + 1 > nowAnimInfo['end']
         
-
         if  KEEP_PLAYING or JUMPING or FALLING_REPEAT:
             if self.matched_frame_index + 1 <= nowAnimInfo['end']:
                 print('========= SAME ANIMATION CONTINUE ===========',)
@@ -121,8 +108,9 @@ class MotionMatcher:
                     self.time = UPDATE_TIME
                     self.findBestFrame(query)
             elif FALLING_REPEAT:
+                self.isReset = True
                 self.isUpdated = True
-                self.matched_frame_index = nowAnimInfo['start']
+                # self.matched_frame_index = nowAnimInfo['start']
 
                
         # 특정 포즈를 지정해줘야 하는 경우

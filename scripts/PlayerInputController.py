@@ -96,14 +96,14 @@ class ModalOperator(bpy.types.Operator):
         for index in range(3):
             obstacle = bpy.data.objects['Obstacle-Log'+str(index)]
             if self.detect_is_inside(obstacle, mycube, 'Obstacle-Log'+str(index)):
-                print('들어있음', 'Obstacle-Log'+str(index))
+                # print('들어있음', 'Obstacle-Log'+str(index))
                 return False
 
 
         for index in range(4):
             obstacle = bpy.data.objects['Stage'+str(index)]
             if self.detect_is_inside(obstacle, mycube, ''):
-                print('들어있음2','Stage'+str(index))
+                # print('들어있음2','Stage'+str(index))
                 return False
 
 
@@ -123,15 +123,7 @@ class ModalOperator(bpy.types.Operator):
         if obstacle.location.y - y_dimension < mycube['y'] < obstacle.location.y + y_dimension:
             WITHIN_Y = True
 
-        # if mycube['z'] > obstacle.location.z-np.abs(obstacle.dimensions.z):
-        #     OVER_Z = True
-
-        if 'Obstacle-Log0' in name:
-            print('출력 확인')
-            print(obstacle.location.x - x_dimension , mycube['x'] , obstacle.location.x + x_dimension)
-            print(obstacle.location.y - y_dimension , mycube['y'] , obstacle.location.y + y_dimension)
         if  WITHIN_X and WITHIN_Y:
-            
             return True
         else: 
             return False
@@ -153,10 +145,7 @@ class ModalOperator(bpy.types.Operator):
             if self.falling_down_pose2 == -1 and poses[index]['animInfo'][0]['name'] == 'Falling Into Pool2.fbx':
                 self.falling_down_pose2 = index  
 
-
-    # 소멸자
-    def __del__(self):
-        print("End")      
+    def reset_pose(self):
         obj = bpy.data.objects['Armature']
         bone_struct = obj.pose.bones
         joint_names = bone_struct.keys()
@@ -179,6 +168,27 @@ class ModalOperator(bpy.types.Operator):
         # 카메라 위치 초기화
         camera = bpy.context.scene.camera 
         camera.location = [0,25,7]
+
+        # 프레임 초기화
+        for now_frame in range(PLAY_START, PLAY_END+1):
+            for joint in joint_names:
+                bone_struct[joint].keyframe_delete(
+                        data_path='location',
+                        frame=now_frame)
+                bone_struct[joint].keyframe_delete(
+                    data_path='rotation_quaternion',
+                    frame=now_frame)
+
+        self.fallingFirst = True
+        self.is_falling = False
+        self.motionMatcher.isReset = False
+        
+
+
+    # 소멸자
+    def __del__(self):
+        print("End")      
+        self.reset_pose()
             
 
     def execute(self, context):
@@ -199,7 +209,6 @@ class ModalOperator(bpy.types.Operator):
         for location in data:
             locationList.append((location-mean)/std)
         return locationList
-
 
     def move(self):
         obj = bpy.data.objects['Armature']
@@ -259,9 +268,25 @@ class ModalOperator(bpy.types.Operator):
             self.motionMatcher.time = UPDATE_TIME
 
         
-        self.is_falling = self.detect_falling()
+        if not self.is_falling or self.motionMatcher.isJumping: 
+            self.is_falling = self.detect_falling()
+
+        # 떨어지는 모션
+        if self.is_falling:
+            for index in range(5):
+                trajectoryPoint = bpy.data.objects['Point'+ str(index+1)]
+                trajectoryPoint.hide_viewport = True # 물에 빠진 경우 점 숨기기
+
+            if self.fallingFirst:
+                self.motionMatcher.updateMatchedMotion(specialIndex = self.falling_down_pose, specialAnimName = 'Falling Into Pool.fbx')
+                self.fallingFirst = False
+            else:
+                self.motionMatcher.updateMatchedMotion(specialIndex = self.falling_down_pose2, specialAnimName = 'Falling Into Pool2.fbx')
+                if self.motionMatcher.isReset:
+                    self.reset_pose()
+                
         # 입력의 크기가 0보다 큰 경우 -> 유효한 쿼리 생성후 업데이트 함수 호출
-        if np.linalg.norm(input_direction) > 0.0: 
+        elif np.linalg.norm(input_direction) > 0.0: 
             self.idle = False
             queryVector = self.createQueryVector(input_direction, self.KEY_MAP[CROUCH])
             self.motionMatcher.updateMatchedMotion(query = queryVector, crouch = self.KEY_MAP[CROUCH], jump = self.KEY_MAP[JUMP])
@@ -270,15 +295,7 @@ class ModalOperator(bpy.types.Operator):
         elif globalLocation[1] > FINISH_LINE_Y and globalLocation[0] > FINISH_LINE_X:
             self.motionMatcher.updateMatchedMotion(specialIndex = self.finish_pose)
 
-        # 떨어지는 모션
-        elif self.is_falling:
-            print('벗어남!!')
-            if self.fallingFirst:
-                self.motionMatcher.updateMatchedMotion(specialIndex = self.falling_down_pose)
-                self.fallingFirst = False
-            else:
-                self.motionMatcher.updateMatchedMotion(specialIndex = self.falling_down_pose2)
-
+        
         # 웅크리기 상태로 인풋이 없는 경우 -> 웅크리기 초기화 자세 / 이외의 상태일 때 인풋이 없는 경우 -> 기본 초기화 자세
         else:
             if self.KEY_MAP[CROUCH]: 
@@ -292,8 +309,6 @@ class ModalOperator(bpy.types.Operator):
         
         self.prevInput = input_direction
         if self.first: self.first = False
-        self.is_falling = False
-
 
 
     def createQueryVector(self, input_direction, crouch = False):
@@ -356,11 +371,8 @@ class ModalOperator(bpy.types.Operator):
         # 궤적 예측에 맞게 노란색 점 위치 설정
         for index, point in enumerate(printPoint):
             trajectoryPoint = bpy.data.objects['Point'+ str(index+1)]
-            if self.is_falling:
-                trajectoryPoint.hide_viewport = True # 물에 빠진 경우 점 숨기기
-            else: 
-                trajectoryPoint.hide_viewport = False
-                trajectoryPoint.location = point
+            trajectoryPoint.hide_viewport = False
+            trajectoryPoint.location = point
 
         rootVelocity = [rootVelocity[0],rootVelocity[1],rootVelocity[2]]
         # return [hipHeight/2.25] + (np.array(rootVelocity)/10).tolist() + (np.array(LfootLocation)).tolist() + (np.array(RfootLocation)).tolist() + (np.array(LfootVelocity)/2).tolist() + (np.array(RfootVelocity)/2).tolist() + (np.array(trajectoryLocation)*7).tolist() 

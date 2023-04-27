@@ -117,11 +117,19 @@ class ModalOperator(bpy.types.Operator):
         
         x_dimension = np.abs(obstacle.dimensions.x/2) + offset
         y_dimension = np.abs(obstacle.dimensions.y/2) + offset
+        z_dimension = np.abs(obstacle.dimensions.z/2) + offset
 
-        if obstacle.location.x - x_dimension < mycube['x'] < obstacle.location.x + x_dimension:
-            WITHIN_X = True
-        if obstacle.location.y - y_dimension < mycube['y'] < obstacle.location.y + y_dimension:
-            WITHIN_Y = True
+        if 'Log' in name:
+            # 원통만 y좌표->x좌표, z좌표->y좌표임
+            if obstacle.location.x - y_dimension < mycube['x'] < obstacle.location.x + y_dimension:
+                WITHIN_X = True
+            if obstacle.location.y - z_dimension < mycube['y'] < obstacle.location.y + z_dimension:
+                WITHIN_Y = True
+        else:
+            if obstacle.location.x - x_dimension < mycube['x'] < obstacle.location.x + x_dimension:
+                WITHIN_X = True
+            if obstacle.location.y - y_dimension < mycube['y'] < obstacle.location.y + y_dimension:
+                WITHIN_Y = True
 
         if  WITHIN_X and WITHIN_Y:
             return True
@@ -293,7 +301,7 @@ class ModalOperator(bpy.types.Operator):
 
         # 골에 도착한 경우 세레모니 동작 
         elif globalLocation[1] > FINISH_LINE_Y and globalLocation[0] > FINISH_LINE_X:
-            self.motionMatcher.updateMatchedMotion(specialIndex = self.finish_pose)
+            self.motionMatcher.updateMatchedMotion(specialIndex = self.finish_pose, specialAnimName='Victory Idle.fbx')
 
         
         # 웅크리기 상태로 인풋이 없는 경우 -> 웅크리기 초기화 자세 / 이외의 상태일 때 인풋이 없는 경우 -> 기본 초기화 자세
@@ -391,9 +399,9 @@ class ModalOperator(bpy.types.Operator):
 
 
     def modal(self, context, event):
-        if event.type == 'LEFTMOUSE':  # Confirm
-            return {'FINISHED'}
-        elif event.type in {'RIGHTMOUSE', 'ESC'}:  # Cancel
+        # if event.type == 'LEFTMOUSE':  # Confirm
+        #     return {'FINISHED'}
+        if event.type in {'RIGHTMOUSE', 'ESC'}:  # Cancel
             return {'CANCELLED'}
         elif event.type == 'MOUSEMOVE':
             pass

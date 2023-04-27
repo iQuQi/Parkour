@@ -111,10 +111,14 @@ class MotionMatcher:
                 self.isReset = True
                 self.isUpdated = True
                 # self.matched_frame_index = nowAnimInfo['start']
+            elif specialAnimName=='Victory Idle.fbx':
+                self.isUpdated = True
+                self.matched_frame_index = nowAnimInfo['start']
 
                
         # 특정 포즈를 지정해줘야 하는 경우
         elif specialIndex != -1:
+            print('들어와?')
             self.isUpdated = True
             self.matched_frame_index = specialIndex
 

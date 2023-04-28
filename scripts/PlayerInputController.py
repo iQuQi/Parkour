@@ -285,13 +285,9 @@ class ModalOperator(bpy.types.Operator):
                 trajectoryPoint = bpy.data.objects['Point'+ str(index+1)]
                 trajectoryPoint.hide_viewport = True # 물에 빠진 경우 점 숨기기
 
-            if self.fallingFirst:
-                self.motionMatcher.updateMatchedMotion(specialIndex = self.falling_down_pose, specialAnimName = 'Falling Into Pool.fbx')
-                self.fallingFirst = False
-            else:
-                self.motionMatcher.updateMatchedMotion(specialIndex = self.falling_down_pose2, specialAnimName = 'Falling Into Pool2.fbx')
-                if self.motionMatcher.isReset:
-                    self.reset_pose()
+            self.motionMatcher.updateMatchedMotion(specialIndex = self.falling_down_pose, specialAnimName = 'Falling Into Pool.fbx') 
+            if self.motionMatcher.isReset:
+                self.reset_pose()
                 
         # 입력의 크기가 0보다 큰 경우 -> 유효한 쿼리 생성후 업데이트 함수 호출
         elif np.linalg.norm(input_direction) > 0.0: 

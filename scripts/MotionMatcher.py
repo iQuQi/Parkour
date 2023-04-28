@@ -91,7 +91,7 @@ class MotionMatcher:
         # 점프 중인 경우 - v키가 한번만 들어와도 점프동작을 처음부터 끝까지 수행하도록 함
         # 현재 세레모니, 웅크리기 멈춤 또는 서서 멈춤 동작 중이거나 애니메이션이 끝난 경우 ====> 이어서 재생
         JUMPING = self.isJumping and 'Jump' in nowAnimInfo['name']
-        FALLING_REPEAT = specialAnimName == 'Falling Into Pool2.fbx' and 'Falling Into Pool2' in nowAnimInfo['name']
+        FALLING_REPEAT = specialAnimName == 'Falling Into Pool.fbx' and 'Falling Into Pool' in nowAnimInfo['name']
         KEEP_PLAYING = specialIndex!=-1 and poses[specialIndex]['animInfo'][0]['name'] == poses[self.matched_frame_index]['animInfo'][0]['name']
         LAST_FRAME = self.matched_frame_index + 1 > nowAnimInfo['end']
         
@@ -106,7 +106,7 @@ class MotionMatcher:
                     self.matched_frame_index = specialIndex
                 else: 
                     self.time = UPDATE_TIME
-                    self.findBestFrame(query)
+                    self.findBestFrame(query)  
             elif FALLING_REPEAT:
                 self.isReset = True
                 self.isUpdated = True

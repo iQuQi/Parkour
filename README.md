@@ -71,6 +71,6 @@
 <br><br>
 
 # 🏆 프로젝트 결과
-https://www.youtube.com/watch?v=1ljFC2C9pik
+https://www.youtube.com/watch?v=_JCTBsr2cpY
 
-[![Parkrour](http://img.youtube.com/vi/1ljFC2C9pik/0.jpg)](https://youtu.be/1ljFC2C9pik)
+[![Parkrour](http://img.youtube.com/vi/_JCTBsr2cpY/0.jpg)](https://youtu.be/_JCTBsr2cpY)

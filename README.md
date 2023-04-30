@@ -71,9 +71,9 @@
 <br><br>
 
 # 🏆 프로젝트 결과
-[[제출]Motion Matching.pptx](https://github.com/iQuQi/Parkour/files/11361142/Motion.Matching.pptx)
+발표 슬라이드: [[제출]Motion Matching.pptx](https://github.com/iQuQi/Parkour/files/11361142/Motion.Matching.pptx)
 
-https://www.youtube.com/watch?v=_JCTBsr2cpY
+결과 영상 링크: https://www.youtube.com/watch?v=_JCTBsr2cpY
 
 [![Parkrour](http://img.youtube.com/vi/_JCTBsr2cpY/0.jpg)](https://youtu.be/_JCTBsr2cpY)
 

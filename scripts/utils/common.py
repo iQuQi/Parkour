@@ -4,7 +4,7 @@ import os
 import json
 
 VECTOR3 = [0,0,0]
-KEY_CODE = {'D':2,'F':3,'Z': 6,'X': 7, 'C': 8,'V': 9, 'B': 10,'SPACE': 49, 'LEFT': 123, 'RIGHT': 124, 'DOWN' : 125, 'UP': 126}
+KEY_CODE = {'A':0, 'S':1, 'D':2, 'F':3,'Z': 6,'X': 7, 'C': 8,'V': 9, 'B': 10,'SPACE': 49, 'LEFT': 123, 'RIGHT': 124, 'DOWN' : 125, 'UP': 126}
 X = 0
 Y = 1
 Z = 2
@@ -18,6 +18,8 @@ FINISH_LINE_Y = -3
 START_LINE = 1
 IDLE_INDEX = -1
 INITIALIZE_TIME = 30
+PLAY_START = 0
+PLAY_END = 250
 DEFAULT_EULER = [1.5708,0,0.0320]
           
 upper_dir_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))

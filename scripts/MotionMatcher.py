@@ -12,11 +12,6 @@ import mathutils
 from math import radians
 from Inertialization import Inertialization
 
-
-
-#Combined Files Path
-COMBINED_FILE_PATH = os.path.abspath('dataSet.npy')
-
 class MotionMatcher:
     time = UPDATE_TIME
     matched_frame_index = 0
@@ -27,6 +22,7 @@ class MotionMatcher:
     tree = ''
     init_pose = 0
 
+    isReset = False
     isUpdated = False
     isCrouching = False
     isJumping = False
@@ -58,11 +54,14 @@ class MotionMatcher:
        
 
     def __del__(self):
-        print('MOTION matcher DEL')
+        # PlayerInputController로 이동
+        print('---- Motion Matcher Del ----')
   
 
     def findBestFrame(self,query): 
         print('========= UPDATE_TIME =========')
+
+        if not query: return
 
         # 쿼리벡터 넣어주기
         distance, findIndex = self.tree.query(query) # 트리에서 검색
@@ -72,18 +71,17 @@ class MotionMatcher:
         newAnimInfo = poses[newPoseIndex]['animInfo'][0]
 
         self.isUpdated = True
-        self.matched_frame_index = newPoseIndex    
+        self.matched_frame_index = newPoseIndex   
+        print('애니메이션 이름 : ', poses[self.matched_frame_index]['animInfo'][0]['name'], poses[self.matched_frame_index]['animInfo'][0]['index'])
+ 
 
     def getCurrentPose(self):
         return poses[self.matched_frame_index]['joints']
 
-    def updateMatchedMotion(self, query = [], specialIndex=-1, crouch=False, jump=False):
+    def updateMatchedMotion(self, query = [], specialIndex=-1, specialAnimName='', crouch=False, jump=False):
         obj = bpy.data.objects['Armature']
         bone_struct = obj.pose.bones
         joint_names = bone_struct.keys()
-
-        # Get a bone.
-        arm = obj.data
         
         nowAnimInfo = poses[self.matched_frame_index]['animInfo'][0]
         sourcePose = poses[self.matched_frame_index] # for Inertialization
@@ -93,10 +91,11 @@ class MotionMatcher:
         # 점프 중인 경우 - v키가 한번만 들어와도 점프동작을 처음부터 끝까지 수행하도록 함
         # 현재 세레모니, 웅크리기 멈춤 또는 서서 멈춤 동작 중이거나 애니메이션이 끝난 경우 ====> 이어서 재생
         JUMPING = self.isJumping and 'Jump' in nowAnimInfo['name']
+        FALLING_REPEAT = specialAnimName == 'Falling Into Pool.fbx' and 'Falling Into Pool' in nowAnimInfo['name']
         KEEP_PLAYING = specialIndex!=-1 and poses[specialIndex]['animInfo'][0]['name'] == poses[self.matched_frame_index]['animInfo'][0]['name']
         LAST_FRAME = self.matched_frame_index + 1 > nowAnimInfo['end']
-
-        if  KEEP_PLAYING or JUMPING:
+        
+        if  KEEP_PLAYING or JUMPING or FALLING_REPEAT:
             if self.matched_frame_index + 1 <= nowAnimInfo['end']:
                 print('========= SAME ANIMATION CONTINUE ===========',)
                 self.matched_frame_index =  (self.matched_frame_index + 1) % len(poses)
@@ -107,10 +106,19 @@ class MotionMatcher:
                     self.matched_frame_index = specialIndex
                 else: 
                     self.time = UPDATE_TIME
-                    self.findBestFrame(query)
+                    self.findBestFrame(query)  
+            elif FALLING_REPEAT:
+                self.isReset = True
+                self.isUpdated = True
+                # self.matched_frame_index = nowAnimInfo['start']
+            elif specialAnimName=='Victory Idle.fbx':
+                self.isUpdated = True
+                self.matched_frame_index = nowAnimInfo['start']
+
                
         # 특정 포즈를 지정해줘야 하는 경우
         elif specialIndex != -1:
+            print('들어와?')
             self.isUpdated = True
             self.matched_frame_index = specialIndex
 
@@ -124,7 +132,6 @@ class MotionMatcher:
 
 
         targetPose = poses[self.matched_frame_index] # for Inertialization
-        print('애니메이션 이름 : ', poses[self.matched_frame_index]['animInfo'][0]['name'], poses[self.matched_frame_index]['animInfo'][0]['index'])
 
 
 
@@ -138,6 +145,8 @@ class MotionMatcher:
 
         # 해당하는 프레임으로 애니메이션 교체 & 재생 
         currentFrame = bpy.context.scene.frame_current
+        nextFrame = currentFrame + 1
+        if nextFrame >  PLAY_END : nextFrame = PLAY_START
         for joint in joint_names:
             # 조인트 회전 정보 업데이트
             jointRotation = mathutils.Quaternion(poses[self.matched_frame_index]['joints'][joint]['rotation'])
@@ -205,13 +214,17 @@ class MotionMatcher:
 
                 for index in range(5): # 0~4까지 피쳐 위치 출력 -> 파란색 점들
                     featurePoint = bpy.data.objects['Feature'+ str(index+1)]
-                    if self.matched_frame_index + index*4 <= poses[self.matched_frame_index]['animInfo'][0]['end']:
-                        poseLocation = poses[self.matched_frame_index + index*4]['joints'][joint]['location']
-                        diff = obj.rotation_euler.to_matrix() @ mathutils.Vector(substractArray3(poseLocation, self.firstPoseLocation))
-                        featurePoint.hide_viewport = False
-                        featurePoint.location = [diff[0]/100 + obj.location[0], diff[1]/100 + obj.location[1], 0]
+                    if 'Falling Into Pool' in poses[self.matched_frame_index]['animInfo'][0]['name']:
+                        featurePoint.hide_viewport = True # 물에 빠진 경우 점 숨기기
                     else:
-                        featurePoint.hide_viewport = True # 인덱스가 벗어난 경우 해당 점은 숨긴다
+                        featurePoint.hide_viewport = False
+                        if self.matched_frame_index + index*4 <= poses[self.matched_frame_index]['animInfo'][0]['end']:
+                            poseLocation = poses[self.matched_frame_index + index*4]['joints'][joint]['location']
+                            diff = obj.rotation_euler.to_matrix() @ mathutils.Vector(substractArray3(poseLocation, self.firstPoseLocation))
+                            featurePoint.hide_viewport = False
+                            featurePoint.location = [diff[0]/100 + obj.location[0], diff[1]/100 + obj.location[1], 0]
+                        else:
+                            featurePoint.hide_viewport = True # 인덱스가 벗어난 경우 해당 점은 숨긴다
 
             # 나머지 조인트 위치정보 업데이트
             else: 
@@ -223,19 +236,17 @@ class MotionMatcher:
             # Set the keyframe at frame 1.
             bone_struct[joint].keyframe_insert(
                 data_path='location',
-                frame=currentFrame+1)
+                frame=nextFrame)
             bone_struct[joint].keyframe_insert(
                 data_path='rotation_quaternion',
-                frame=currentFrame+1)
+                frame=nextFrame)
 
             bone_struct[joint].keyframe_delete(
                 data_path='location',
-                frame=currentFrame-1)
+                frame=currentFrame)
             bone_struct[joint].keyframe_delete(
                 data_path='rotation_quaternion',
-                frame=currentFrame-1)
-            
-
+                frame=currentFrame)
         # 시간 업데이트 & 변수 초기화
         self.time = (self.time + 1) % (UPDATE_TIME + 1)
         self.isUpdated = False

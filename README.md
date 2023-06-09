@@ -6,9 +6,7 @@
 
 이러한 이유로 모션 매칭 기법이 주목받기 시작했다. 모션 매칭은 **언제든지 다른 애니메이션으로 이동할 수 있으며, 더 높은 반응성을 가진다는 특징**이 있다.
 
-<details>
-<summary>Motion Graph</summary>
-<div markdown="1">
+## Motion Graph
     
 ![image](https://github.com/iQuQi/Parkour/assets/69742775/195c4940-9554-43e6-ac43-c2721a70bc88)
 
@@ -24,13 +22,9 @@
 - 동작의 네이밍과 위치 선정이 쉽지 않음
 - 루프 구현 시, 시작 동작과 끝 동작의 시점과 루프 변환 시점 선정이 어려움
 
-</div>
-</details>
 
 
-<details>
-<summary>Motion Matching의 전체 흐름</summary>
-<div markdown="1">
+## Motion Matching의 전체 흐름
     
 ![image](https://github.com/iQuQi/Parkour/assets/69742775/a1f62dc7-08fa-4592-b3ae-afe62c8681c7)
 
